@@ -1,0 +1,79 @@
+#
+# pin constraints
+#
+#
+# additional constraints
+#
+
+NET "CLK" TNM_NET = sys_clk_pin;
+TIMESPEC TS_sys_clk_pin = PERIOD sys_clk_pin 50000 kHz;
+
+NET RESET LOC = "AE24"  |  IOSTANDARD = "LVCMOS33"  |  TIG;
+
+NET CLK_N LOC = "AF14"  |  IOSTANDARD = "LVDS_33";
+NET CLK_P LOC = "AD14"  |  IOSTANDARD = "LVDS_33";
+
+NET my_peripheral_0_DIP_Data_pin[0] LOC = "W19"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_DIP_Data_pin[1] LOC = "Y24"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_DIP_Data_pin[2] LOC = "AC24"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_DIP_Data_pin[3] LOC = "AA24"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_DIP_Data_pin[4] LOC = "AB24"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_DIP_Data_pin[5] LOC = "AC23"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_DIP_Data_pin[6] LOC = "AA23"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_DIP_Data_pin[7] LOC = "U19"  |  IOSTANDARD = "LVCMOS33";
+
+NET my_peripheral_0_LED_Data_pin[0] LOC = "N24"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_LED_Data_pin[1] LOC = "N23"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_LED_Data_pin[2] LOC = "M24"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_LED_Data_pin[3] LOC = "L24"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_LED_Data_pin[4] LOC = "L23"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_LED_Data_pin[5] LOC = "K24"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_LED_Data_pin[6] LOC = "H24"  |  IOSTANDARD = "LVCMOS33";
+NET my_peripheral_0_LED_Data_pin[7] LOC = "D24"  |  IOSTANDARD = "LVCMOS33";
+
+NET RS232_Uart_1_sin LOC = "A21"  |  IOSTANDARD = "LVCMOS33";
+NET RS232_Uart_1_sout LOC = "A20"  |  IOSTANDARD = "LVCMOS33";
+
+NET vga_periph_0_clk_i_pin             LOC = m21 | IOSTANDARD = LVTTL;
+#NET vga_periph_0_reset_n_i_pin         LOC = AE24 | IOSTANDARD = LVCMOS33; # AKA UI_JOY2
+
+NET vga_periph_0_clk_i_pin TNM_NET = clk_i;
+TIMESPEC TS_CLK = PERIOD CLK 37.037 ns HIGH 50 %;
+
+#NET vga_periph_0_direct_mode_i_pin     LOC = W19;
+#NET vga_periph_0_display_mode_i_pin(0) LOC = Y24;
+#NET vga_periph_0_display_mode_i_pin(1) LOC = K19;
+
+NET vga_periph_0_blank_o_pin       LOC = B16  | IOSTANDARD = LVTTL;
+NET vga_periph_0_vga_vsync_o_pin   LOC = A22  | IOSTANDARD = LVTTL;
+NET vga_periph_0_vga_hsync_o_pin   LOC = B22  | IOSTANDARD = LVTTL;
+NET vga_periph_0_pix_clock_o_pin   LOC = C14  | IOSTANDARD = LVTTL;
+NET vga_periph_0_psave_o_pin       LOC = A2   | IOSTANDARD = LVTTL;
+NET vga_periph_0_sync_o_pin        LOC = A17  | IOSTANDARD = LVTTL;
+
+NET vga_periph_0_red_o_pin(0)          LOC = B4   | IOSTANDARD = LVTTL;
+NET vga_periph_0_red_o_pin(1)          LOC = A4   | IOSTANDARD = LVTTL;
+NET vga_periph_0_red_o_pin(2)          LOC = A5   | IOSTANDARD = LVTTL;
+NET vga_periph_0_red_o_pin(3)          LOC = B6   | IOSTANDARD = LVTTL;
+NET vga_periph_0_red_o_pin(4)          LOC = A6   | IOSTANDARD = LVTTL;
+NET vga_periph_0_red_o_pin(5)          LOC = A7   | IOSTANDARD = LVTTL;
+NET vga_periph_0_red_o_pin(6)          LOC = B8   | IOSTANDARD = LVTTL;
+NET vga_periph_0_red_o_pin(7)          LOC = A8   | IOSTANDARD = LVTTL;
+
+NET vga_periph_0_green_o_pin(0)        LOC = A9   | IOSTANDARD = LVTTL;
+NET vga_periph_0_green_o_pin(1)        LOC = A11  | IOSTANDARD = LVTTL;
+NET vga_periph_0_green_o_pin(2)        LOC = B12  | IOSTANDARD = LVTTL;
+NET vga_periph_0_green_o_pin(3)        LOC = A12  | IOSTANDARD = LVTTL;
+NET vga_periph_0_green_o_pin(4)        LOC = N17  | IOSTANDARD = LVTTL;
+NET vga_periph_0_green_o_pin(5)        LOC = A13  | IOSTANDARD = LVTTL;
+NET vga_periph_0_green_o_pin(6)        LOC = N18  | IOSTANDARD = LVTTL;
+NET vga_periph_0_green_o_pin(7)        LOC = A16  | IOSTANDARD = LVTTL;
+
+NET vga_periph_0_blue_o_pin(0)         LOC = A18  | IOSTANDARD = LVTTL;
+NET vga_periph_0_blue_o_pin(1)         LOC = B18  | IOSTANDARD = LVTTL;
+NET vga_periph_0_blue_o_pin(2)         LOC = L17  | IOSTANDARD = LVTTL;
+NET vga_periph_0_blue_o_pin(3)         LOC = M18  | IOSTANDARD = LVTTL;
+NET vga_periph_0_blue_o_pin(4)         LOC = C18  | IOSTANDARD = LVTTL;
+NET vga_periph_0_blue_o_pin(5)         LOC = K18  | IOSTANDARD = LVTTL;
+NET vga_periph_0_blue_o_pin(6)         LOC = C19  | IOSTANDARD = LVTTL;
+NET vga_periph_0_blue_o_pin(7)         LOC = C20  | IOSTANDARD = LVTTL;

@@ -1,0 +1,10 @@
+##############################################################################
+## Filename:          D:/work/lprs2/2013_2014/Resene_vezbe/lab45_2/basic_system/pcores/test_v1_00_a/data/test_v2_1_0.pao
+## Description:       Peripheral Analysis Order
+## Date:              Mon Mar 31 16:35:08 2014 (by Create and Import Peripheral Wizard)
+##############################################################################
+
+lib proc_common_v3_00_a  all 
+lib axi_slave_burst_v1_00_a  all 
+lib test_v1_00_a user_logic vhdl
+lib test_v1_00_a test vhdl

@@ -1,0 +1,9 @@
+##############################################################################
+## Filename:          D:\work\t_fw\20_fpga_firmware\trunk\peripheral_repository\MyProcessorIPLib\pcores\hil_unit_v1_00_a\data\hil_unit_v2_1_0.bbd
+## Description:       Black Box Definition
+## Date:              Tue Oct 13 14:29:49 2009 (by Create and Import Peripheral Wizard)
+##############################################################################
+
+Files
+################################################################################
+char_rom_def.ngc

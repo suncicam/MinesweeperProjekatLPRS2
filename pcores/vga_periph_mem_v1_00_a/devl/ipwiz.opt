@@ -1,0 +1,10 @@
+-batch 
+-create vga_periph_mem 
+-ver 1.00.a 
+-dir "D:\work\lprs2\2013_2014\Resene_vezbe\lab56\basic_system" 
+-lang vhdl 
+-bus axi4 s 
+-burst s 32 
+-arn 1 
+-xps 
+-driver 

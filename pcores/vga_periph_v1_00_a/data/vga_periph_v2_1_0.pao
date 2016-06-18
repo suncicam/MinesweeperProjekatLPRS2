@@ -1,0 +1,24 @@
+##############################################################################
+## Filename:          D:/work/lprs2/2013_2014/Resene_vezbe/lab56/basic_system/pcores/vga_periph_v1_00_a/data/vga_periph_v2_1_0.pao
+## Description:       Peripheral Analysis Order
+## Date:              Tue Mar 04 15:31:41 2014 (by Create and Import Peripheral Wizard)
+##############################################################################
+
+lib proc_common_v3_00_a  all 
+lib axi_lite_ipif_v1_01_a  all 
+lib vga_periph_v1_00_a user_logic   vhdl
+lib vga_periph_v1_00_a vga_periph   vhdl
+
+lib vga_periph_v1_00_a char_rom     vhdl
+#lib vga_periph_v1_00_a char_rom_def vhdl
+lib vga_periph_v1_00_a dcm108MHz    vhdl
+lib vga_periph_v1_00_a dcm25MHz     vhdl
+lib vga_periph_v1_00_a dcm50MHz     vhdl
+lib vga_periph_v1_00_a dcm75MHz     vhdl
+lib vga_periph_v1_00_a graphics_mem vhdl
+lib vga_periph_v1_00_a text_mem     vhdl
+lib vga_periph_v1_00_a user_logic   vhdl
+lib vga_periph_v1_00_a vga          vhdl
+lib vga_periph_v1_00_a vga_periph   vhdl
+lib vga_periph_v1_00_a vga_sync     vhdl
+lib vga_periph_v1_00_a vga_top      vhdl
