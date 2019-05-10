@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>hello_world</name>
-	<comment>hello_world_bsp - microblaze_0</comment>
+	<comment></comment>
 	<projects>
+		<project>standalone_bsp_0</project>
 		<project>hello_world_bsp</project>
 	</projects>
 	<buildSpec>
