@@ -81,8 +81,8 @@ char indicationMap[9][9];
 //end of game
 void printOutEndOfGame(char blankTable[SIZE][SIZE], char solvedMap[SIZE][SIZE]) {
 	int i, j, ii, jj;
-	for (i = 0; i < SIZE; i++) {
-		for (j = 0; j < SIZE; j++) {
+	for (i = 0; i < SIZE; i++) { // 9 visina
+		for (j = 0; j < SIZE; j++) { // 9 sirinam, prolazi kroz sva polja
 			ii = (i * 16) + 80;
 			jj = (j * 16) + 80;
 			if (blankTable[i][j] == FLAG) {
@@ -355,7 +355,7 @@ void drawingCursor(int startX, int startY, int endX, int endY) {
 //function that controls switches and buttons
 
 void move() {
-	int startX = 81, startY = 81, endX = 96, endY = 96;
+	int startX = 97, startY = 81, endX = 112, endY = 96;
 	int oldStartX, oldStartY, oldEndX, oldEndY;
 	int x, y, ic, ib, i, j;
 	int prethodnoStanje;
@@ -372,7 +372,7 @@ void move() {
 		if (btn_state == NOTHING_PRESSED) {
 			btn_state = SOMETHING_PRESSED;
 			if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & DOWN) == 0) {
-				if (endY < 224) {
+				if (endY < 208) {
 					oldStartY = startY;
 					oldEndY = endY;
 					startY += 16;
@@ -385,7 +385,7 @@ void move() {
 
 			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & RIGHT) == 0) {
 				randomCounter++;
-				if (endX < 224) {
+				if (endX < 208) {
 					oldStartX = startX;
 					startX += 16;
 					endX += 16;
@@ -411,8 +411,7 @@ void move() {
 					openField(startX, oldStartY, blankMap);
 				}
 
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & CENTER)
-					== 0) {
+			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & CENTER) == 0) {
 				int m = (startX - 80) / 16;
 				int n = (startY - 80) / 16;
 				firstTimeCenter++;
@@ -633,25 +632,25 @@ int main() {
 			i = y * 320 + x;
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, 0x000000);
+							+ i * 4, 0x3971ed);
 		}
 	}
 
 	//drawing a map
-	for (kolona = 0; kolona < 9; kolona++) {
-		for (red = 0; red < 9; red++) {
+	for (kolona = 0; kolona < 8; kolona++) {
+		for (red = 0; red < 8; red++) {
 			drawMap(80, 16, 80 + red * 16, 80 + kolona * 16, 16, 16);
 		}
 	}
 
 	//smiley
-	drawMap(0, 55, 120, 54, 27, 26);
+	//drawMap(0, 55, 120, 54, 27, 26);
 
 	//flag
-	drawMap(65, 17, 154, 60, 13, 13);
+	//drawMap(65, 17, 154, 60, 13, 13);
 
 	//counter
-	drawMap(116, 32, 168, 54, 14, 23);
+	//drawMap(116, 32, 168, 54, 14, 23);
 
 	//moving through the table
 	move();
