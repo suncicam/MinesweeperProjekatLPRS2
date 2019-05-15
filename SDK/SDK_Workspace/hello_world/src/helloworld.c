@@ -43,7 +43,7 @@
 #include "minesweeper_sprites.h"
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>
-#define SIZE 9
+#define SIZE 8
 #define UP 0b01000000
 #define DOWN 0b00000100
 #define LEFT 0b00100000
@@ -253,32 +253,6 @@ void makeTable(char temp[9][9]) {
 		}
 
 	}
-
-	//for testing
-
-	for (i = 0; i < 9; i++) {
-		for (j = 0; j < 9; j++) {
-			xil_printf("%c", table[i][j]);
-		}
-		xil_printf("\n");
-	}
-
-	for (i = 0; i < 9; i++) {
-		for (j = 0; j < 9; j++) {
-			temp[i][j] = table[j][i];
-
-		}
-	}
-
-	xil_printf("\n");
-
-	for (i = 0; i < 9; i++) {
-		for (j = 0; j < 9; j++) {
-			xil_printf("%c", temp[j][i]);
-		}
-		xil_printf("\n");
-	}
-
 }
 
 //extracting pixel data from a picture for printing out on the display
@@ -319,7 +293,7 @@ void drawingCursor(int startX, int startY, int endX, int endY) {
 			i = y * 320 + x;
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, 0x000000);
+							+ i * 4, 0x38);
 		}
 	}
 
@@ -328,7 +302,7 @@ void drawingCursor(int startX, int startY, int endX, int endY) {
 			i = y * 320 + x;
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, 0x000000);
+							+ i * 4, 0x38);
 		}
 	}
 
@@ -337,7 +311,7 @@ void drawingCursor(int startX, int startY, int endX, int endY) {
 			i = y * 320 + x;
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, 0x000000);
+							+ i * 4, 0x38);
 		}
 	}
 
@@ -346,16 +320,53 @@ void drawingCursor(int startX, int startY, int endX, int endY) {
 			i = y * 320 + x;
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, 0x000000);
+							+ i * 4, 0x38);
 		}
 	}
 
 }
 
+void cleanCursor(int startX,int startY,int endX,int endY){
+	for (x = startX; x < endX; x++) {
+			for (y = startY; y < startY + 2; y++) {
+				i = y * 320 + x;
+				VGA_PERIPH_MEM_mWriteMemory(
+						XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+								+ i * 4, 0x0);
+			}
+		}
+
+		for (x = startX; x < endX; x++) {
+			for (y = endY - 2; y < endY; y++) {
+				i = y * 320 + x;
+				VGA_PERIPH_MEM_mWriteMemory(
+						XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+								+ i * 4, 0x0);
+			}
+		}
+
+		for (x = startX; x < startX + 2; x++) {
+			for (y = startY; y < endY; y++) {
+				i = y * 320 + x;
+				VGA_PERIPH_MEM_mWriteMemory(
+						XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+								+ i * 4, 0x0);
+			}
+		}
+
+		for (x = endX - 2; x < endX; x++) {
+			for (y = startY; y < endY; y++) {
+				i = y * 320 + x;
+				VGA_PERIPH_MEM_mWriteMemory(
+						XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+								+ i * 4, 0x0);
+			}
+		}
+}
 //function that controls switches and buttons
 
 void move() {
-	int startX = 97, startY = 81, endX = 112, endY = 96;
+	int startX = 40, startY = 0, endX = 70, endY = 30;
 	int oldStartX, oldStartY, oldEndX, oldEndY;
 	int x, y, ic, ib, i, j;
 	int prethodnoStanje;
@@ -365,6 +376,7 @@ void move() {
 	btn_state_t btn_state = NOTHING_PRESSED;
 
 	makeTable(solvedMap);
+
 	drawingCursor(startX, startY, endX, endY);
 
 	while (endOfGame != 1) {
@@ -372,12 +384,14 @@ void move() {
 		if (btn_state == NOTHING_PRESSED) {
 			btn_state = SOMETHING_PRESSED;
 			if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & DOWN) == 0) {
-				if (endY < 208) {
+				if (endY < 240) {
 					oldStartY = startY;
 					oldEndY = endY;
-					startY += 16;
-					endY += 16;
+					startY += 30;
+					endY += 30;
+
 					drawingCursor(startX, startY, endX, endY);
+					cleanCursor(startX,oldStartY,endX,startY);
 					openField(startX, oldStartY, blankMap);
 				}
 
@@ -385,29 +399,32 @@ void move() {
 
 			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & RIGHT) == 0) {
 				randomCounter++;
-				if (endX < 208) {
+				if (endX < 280) {
 					oldStartX = startX;
-					startX += 16;
-					endX += 16;
+					startX += 30;
+					endX += 30;
 					drawingCursor(startX, startY, endX, endY);
+					cleanCursor(oldStartX,startY,startX,endY);
 					openField(oldStartX, startY, blankMap);
 
 				}
 			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & LEFT) == 0) {
-				if (startX > 81) {
+				if (startX > 40) {
 					oldStartX = startX;
-					startX -= 16;
-					endX -= 16;
+					startX -= 30;
+					endX -= 30;
 					drawingCursor(startX, startY, endX, endY);
+					cleanCursor(oldStartX,startY,startX,endY);
 					openField(oldStartX, startY, blankMap);
 				}
 
 			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & UP) == 0) {
-				if (startY > 81) {
+				if (startY > 0) {
 					oldStartY = startY;
-					startY -= 16;
-					endY -= 16;
+					startY -= 30;
+					endY -= 30;
 					drawingCursor(startX, startY, endX, endY);
+					cleanCursor(startX,oldStartY,endX,startY);
 					openField(startX, oldStartY, blankMap);
 				}
 
@@ -475,41 +492,6 @@ void move() {
 						}
 
 					}
-					//prints out flag counter
-					switch (numOfFlags) {
-					case 9:
-						drawMap(116, 32, 168, 54, 13, 23);
-						break;
-					case 8:
-						drawMap(103, 32, 168, 54, 13, 23);
-						break;
-					case 7:
-						drawMap(90, 32, 168, 54, 13, 23);
-						break;
-					case 6:
-						drawMap(77, 32, 168, 54, 13, 23);
-						break;
-					case 5:
-						drawMap(64, 32, 168, 54, 14, 23);
-						break;
-					case 4:
-						drawMap(51, 32, 168, 54, 13, 23);
-						break;
-					case 3:
-						drawMap(38, 32, 168, 54, 13, 23);
-						break;
-					case 2:
-						drawMap(25, 32, 168, 54, 13, 23);
-						break;
-					case 1:
-						drawMap(13, 32, 168, 54, 13, 23);
-						break;
-					case 0:
-						drawMap(0, 32, 168, 54, 13, 23);
-						break;
-
-					}
-
 				}
 			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & SW1) != 0) {
 				if (numOfFlags < NUMOFMINES) {
@@ -603,8 +585,8 @@ int main() {
 	}
 
 	//map which contains all the moves of the player
-	for (i = 0; i < 9; i++) {
-		for (j = 0; j < 9; j++) {
+	for (i = 0; i < SIZE; i++) {
+		for (j = 0; j < SIZE; j++) {
 			blankMap[i][j] = BEG;
 		}
 	}
@@ -628,29 +610,20 @@ int main() {
 
 	//black background
 	for (x = 0; x < 320; x++) {
-		for (y = 0; y < 240; y++) {
+		for (y = 0; y < 320; y++) {
 			i = y * 320 + x;
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, 0x3971ed);
+							+ i * 4, 0x0);
 		}
 	}
 
 	//drawing a map
-	for (kolona = 0; kolona < 8; kolona++) {
-		for (red = 0; red < 8; red++) {
+	for (kolona = 0; kolona < SIZE; kolona++) {
+		for (red = 0; red < SIZE; red++) {
 			drawMap(80, 16, 80 + red * 16, 80 + kolona * 16, 16, 16);
 		}
 	}
-
-	//smiley
-	//drawMap(0, 55, 120, 54, 27, 26);
-
-	//flag
-	//drawMap(65, 17, 154, 60, 13, 13);
-
-	//counter
-	//drawMap(116, 32, 168, 54, 14, 23);
 
 	//moving through the table
 	move();
