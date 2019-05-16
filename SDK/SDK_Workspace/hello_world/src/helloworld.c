@@ -62,6 +62,8 @@
 //BEG---unpened field
 #define BEG '@'
 
+static int cleanX=0,cleanY=0;
+static int cleanZ=0;
 int endOfGame;
 int inc1;
 int inc2;
@@ -326,40 +328,45 @@ void drawingCursor(int startX, int startY, int endX, int endY) {
 
 }
 
-void cleanCursor(int startX,int startY,int endX,int endY){
+void cleanCursor(int startX,int startY,int endX,int endY,int xx,int yy){
+
 	for (x = startX; x < endX; x++) {
 			for (y = startY; y < startY + 2; y++) {
 				i = y * 320 + x;
-				VGA_PERIPH_MEM_mWriteMemory(
-						XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-								+ i * 4, 0x1f5);
+				if ((xx+yy) & 1)
+					VGA_PERIPH_MEM_mWriteMemory( XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x1f5);
+				else
+					VGA_PERIPH_MEM_mWriteMemory( XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x163);
 			}
 		}
 
 		for (x = startX; x < endX; x++) {
 			for (y = endY - 2; y < endY; y++) {
 				i = y * 320 + x;
-				VGA_PERIPH_MEM_mWriteMemory(
-						XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-								+ i * 4, 0x1f5);
+				if ((xx+yy) & 1)
+					VGA_PERIPH_MEM_mWriteMemory( XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x1f5);
+				else
+					VGA_PERIPH_MEM_mWriteMemory( XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x163);
 			}
 		}
 
 		for (x = startX; x < startX + 2; x++) {
 			for (y = startY; y < endY; y++) {
 				i = y * 320 + x;
-				VGA_PERIPH_MEM_mWriteMemory(
-						XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-								+ i * 4, 0x1f5);
+				if ((xx+yy) & 1)
+					VGA_PERIPH_MEM_mWriteMemory( XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x1f5);
+				else
+					VGA_PERIPH_MEM_mWriteMemory( XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x163);
 			}
 		}
 
 		for (x = endX - 2; x < endX; x++) {
 			for (y = startY; y < endY; y++) {
 				i = y * 320 + x;
-				VGA_PERIPH_MEM_mWriteMemory(
-						XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-								+ i * 4, 0x1f5);
+				if ((xx+yy) & 1)
+					VGA_PERIPH_MEM_mWriteMemory( XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x1f5);
+				else
+					VGA_PERIPH_MEM_mWriteMemory( XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x163);
 			}
 		}
 }
@@ -387,7 +394,11 @@ void move() {
 				if (endY < 240) {
 					oldStartY = startY;
 					oldEndY = endY;
-					cleanCursor(startX,startY,endX,endY);
+
+					cleanY++;
+
+					cleanCursor(startX,startY,endX,endY,cleanX,cleanY);
+
 					startY += 30;
 					endY += 30;
 					drawingCursor(startX, startY, endX, endY);
@@ -401,7 +412,11 @@ void move() {
 				randomCounter++;
 				if (endX < 280) {
 					oldStartX = startX;
-					cleanCursor(startX,startY,endX,endY);
+
+					cleanX++;
+
+					cleanCursor(startX,startY,endX,endY,cleanX,cleanY);
+
 					startX += 30;
 					endX += 30;
 
@@ -413,7 +428,10 @@ void move() {
 			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & LEFT) == 0) {
 				if (startX > 40) {
 					oldStartX = startX;
-					cleanCursor(startX,startY,endX,endY);
+
+					cleanX--;
+					cleanCursor(startX,startY,endX,endY,cleanX,cleanY);
+
 					startX -= 30;
 					endX -= 30;
 					drawingCursor(startX, startY, endX, endY);
@@ -424,7 +442,10 @@ void move() {
 			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & UP) == 0) {
 				if (startY > 0) {
 					oldStartY = startY;
-					cleanCursor(startX,startY,endX,endY);
+
+					cleanY--;
+					cleanCursor(startX,startY,endX,endY,cleanX,cleanY);
+
 					startY -= 30;
 					endY -= 30;
 					drawingCursor(startX, startY, endX, endY);
@@ -618,7 +639,7 @@ int main() {
 			i = y * 320 + x;
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, 0x0);
+							+ i * 4, 0xffffff);
 		}
 	}
 
