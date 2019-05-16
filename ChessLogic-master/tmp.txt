@@ -1,0 +1,188 @@
+<<<<<<< HEAD
+	// Black
+	if ( turn == BLACK ) {
+
+		// Move forward by 1
+		if ( pos < 56) {
+			if ( chess_table[pos + WIDTH] == EMPTY ) {
+				available[0] = pos + WIDTH;
+
+				// Move forward by 2
+				if ( pos < 16)
+					if ( chess_table[pos + 2*WIDTH] == EMPTY )
+						available[1] = pos + 2*WIDTH;
+			}
+		}
+
+		// Eat Right
+		if (pos % WIDTH != 0)
+			if ( chess_table[pos + WIDTH - 1] > 0 )
+				available[2] = pos + WIDTH - 1;
+
+		// Eat Left
+		if (pos % WIDTH != 7)
+			if ( chess_table[pos + WIDTH + 1] > 0 )
+				available[3] = pos + WIDTH + 1;
+	// White
+	} else {
+
+		// Move forward by 1
+		if ( pos > 7) {
+			if ( chess_table[pos - WIDTH] == EMPTY ) {
+				available[0] = pos - WIDTH;
+
+				// Move forward by 2
+				if ( pos > 47)
+					if ( chess_table[pos - 2*WIDTH] == EMPTY )
+						available[1] = pos - 2*WIDTH;
+			}
+		}
+		// Eat Right
+		if (pos % WIDTH != 7)
+			if ( chess_table[pos - WIDTH + 1] < 0 )
+				available[2] = pos - WIDTH + 1;
+
+		// Eat Left
+		if (pos % WIDTH != 0)
+			if ( chess_table[pos - WIDTH - 1] < 0 )
+				available[3] = pos - WIDTH - 1;
+	}
+=======
+case 0:
+    // upper left
+    if ( eatable(10, turn) || chess_table[10] == EMPTY )
+        available[j++] = 10;
+    if ( eatable(17, turn) || chess_table[17] == EMPTY )
+        available[j++] = 17;
+    break;
+case 7:
+    // upper right
+    if ( eatable(13, turn) || chess_table[13] == EMPTY )
+        available[j++] = 13;
+    if ( eatable(22, turn) || chess_table[22] == EMPTY )
+        available[j++] = 22;
+    break;
+case 56:
+    // bottom left
+    if ( eatable(41, turn) || chess_table[41] == EMPTY )
+        available[j++] = 41;
+    if ( eatable(50, turn) || chess_table[50] == EMPTY )
+        available[j++] = 50;
+    break;
+case 63:
+    // bottom right
+    if ( eatable(46, turn) || chess_table[46] == EMPTY )
+        available[j++] = 46;
+    if ( eatable(53, turn) || chess_table[53] == EMPTY )
+        available[j++] = 53;
+    break;
+
+
+    case 1:
+        // upper left + 1
+        if ( eatable(11, turn) || chess_table[11] == EMPTY )
+            available[j++] = 11;
+        if ( eatable(16, turn) || chess_table[16] == EMPTY )
+            available[j++] = 16;
+        if ( eatable(18, turn) || chess_table[18] == EMPTY )
+            available[j++] = 18;
+        break;
+    case 8:
+        // upper left + 8
+        if ( eatable(2, turn) || chess_table[2] == EMPTY )
+            available[j++] = 37;
+        if ( eatable(18, turn) || chess_table[18] == EMPTY )
+            available[j++] = 18;
+        if ( eatable(25, turn) || chess_table[25] == EMPTY )
+            available[j++] = 25;
+        break;
+    case 6:
+        // upper right - 1
+        if ( eatable(12, turn) || chess_table[12] == EMPTY )
+            available[j++] = 12;
+        if ( eatable(21, turn) || chess_table[21] == EMPTY )
+            available[j++] = 21;
+        if ( eatable(23, turn) || chess_table[23] == EMPTY )
+            available[j++] = 23;
+        break;
+    case 15:
+        // upper right + 8
+        if ( eatable(5, turn) || chess_table[5] == EMPTY )
+            available[j++] = 5;
+        if ( eatable(21, turn) || chess_table[21] == EMPTY )
+            available[j++] = 21;
+        if ( eatable(30, turn) || chess_table[30] == EMPTY )
+            available[j++] = 30;
+        break;
+    case 48:
+        // bottom left - 8
+        if ( eatable(33, turn) || chess_table[33] == EMPTY )
+            available[j++] = 33;
+        if ( eatable(42, turn) || chess_table[42] == EMPTY )
+            available[j++] = 42;
+        if ( eatable(58, turn) || chess_table[58] == EMPTY )
+            available[j++] = 58;
+        break;
+    case 57:
+        // bottom left + 1
+        if ( eatable(40, turn) || chess_table[40] == EMPTY )
+            available[j++] = 40;
+        if ( eatable(42, turn) || chess_table[42] == EMPTY )
+            available[j++] = 42;
+        if ( eatable(51, turn) || chess_table[51] == EMPTY )
+            available[j++] = 51;
+        break;
+    case 55:
+        // bottom right - 8
+        if ( eatable(38, turn) || chess_table[38] == EMPTY )
+            available[j++] = 38;
+        if ( eatable(45, turn) || chess_table[45] == EMPTY )
+            available[j++] = 45;
+        if ( eatable(61, turn) || chess_table[61] == EMPTY )
+            available[j++] = 61;
+        break;
+    case 62:
+        // bottom right - 1
+        if ( eatable(45, turn) || chess_table[45] == EMPTY )
+            available[j++] = 45;
+        if ( eatable(47, turn) || chess_table[47] == EMPTY )
+            available[j++] = 47;
+        if ( eatable(52, turn) || chess_table[52] == EMPTY )
+            available[j++] = 52;
+        break;
+
+
+        // >|
+        case 16:
+        case 24:
+        case 32:
+        case 40:
+            if ( eatable(pos - 2*WIDTH + 1, turn) || chess_table[pos - 2*WIDTH + 1] == EMPTY )
+                available[j++] = pos - 2*WIDTH + 1;
+            if ( eatable(pos + 2*WIDTH + 1, turn) || chess_table[pos + 2*WIDTH + 1] == EMPTY )
+                available[j++] = pos + 2*WIDTH + 1;
+            if ( eatable(pos - WIDTH + 2, turn) || chess_table[pos - WIDTH + 2] == EMPTY )
+                available[j++] = pos - WIDTH + 2;
+            if ( eatable(pos + WIDTH + 2, turn) || chess_table[pos + WIDTH + 2] == EMPTY )
+                available[j++] = pos + WIDTH + 2;
+            break;
+
+        // |<
+        case 22:
+        case 30:
+        case 38:
+        case 46:
+            if ( eatable(pos - 2*WIDTH - 1, turn) || chess_table[pos - 2*WIDTH - 1] == EMPTY )
+                available[j++] = pos - 2*WIDTH - 1;
+            if ( eatable(pos + 2*WIDTH - 1, turn) || chess_table[pos + 2*WIDTH - 1] == EMPTY )
+                available[j++] = pos + 2*WIDTH - 1;
+            if ( eatable(pos - 2*WIDTH + 1, turn) || chess_table[pos - 2*WIDTH + 1] == EMPTY )
+                available[j++] = pos - 2*WIDTH + 1;
+            if ( eatable(pos + 2*WIDTH + 1, turn) || chess_table[pos + 2*WIDTH + 1] == EMPTY )
+                available[j++] = pos + 2*WIDTH + 1;
+            if ( eatable(pos - WIDTH + 2, turn) || chess_table[pos - WIDTH + 2] == EMPTY )
+                available[j++] = pos - WIDTH + 2;
+            if ( eatable(pos + WIDTH + 2, turn) || chess_table[pos + WIDTH + 2] == EMPTY )
+                available[j++] = pos + WIDTH + 2;
+            break;
+>>>>>>> c6c68b206358fa51c733cf9cb40c6fd073b72cd6
