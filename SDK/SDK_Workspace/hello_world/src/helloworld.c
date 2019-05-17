@@ -202,7 +202,7 @@ void draw_piece(POINT in, POINT out) {
 
 	for (y = 0; y < size; y++) {
 		for (x = 0; x < size; x++) {
-			ox = ( 40 + out.x * size ) + x; // konverzija mozda sam zajebao
+			ox = ( 40 + (out.x * size) ) + x; // konverzija mozda sam zajebao
 			oy = ( out.y * size ) + y;
 			oi = oy * 320 + ox;
 
@@ -211,6 +211,7 @@ void draw_piece(POINT in, POINT out) {
 			ii = iy * bitmap.width + ix;
 
 			tmp = ( (unsigned short)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 1] << 8 ) | (unsigned short)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 0];
+
 			R =   ((tmp >> 0)  & 0x1f) >> 2;
 
 			G =   ((tmp >> 5)  & 0x3f) >> 3;
@@ -235,11 +236,11 @@ void draw_field(POINT out, int color) {
 
     size_t size = 30;
 
-    RGB = (color == BLACK ? 0xA3 : 0x1F5);
+    RGB = (color == BLACK ? 0x163 : 0x1F5);
 
 	for (y = 0; y < size; y++) {
 		for (x = 0; x < size; x++) {
-			ox = ( 40 + out.x * size ) + x;
+			ox = ( 40 + ( out.x * size) ) + x;
 			oy = ( out.y * size ) + y;
 			oi = oy * 320 + ox;
 
@@ -263,9 +264,9 @@ void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
         RGB = 0x38;
     else
         if ((X+Y) & 1)
-            RGB = 0x1F5;
-        else
             RGB = 0x163;
+        else
+            RGB = 0x1F5;
 
 	// gornja ivica
 	for (x = startX; x < endX; x++) {
@@ -317,6 +318,7 @@ void draw_board(SQUARE board[][WIDTH]) {
     out.x = out.y = 0;
 
     for (y = 0; y < WIDTH; y++, out.y++) {
+    	out.x = 0;
         for (x = 0; x < WIDTH; x++, out.x++) {
             if (board[y][x].piece != NULL)  {
 
@@ -579,12 +581,12 @@ int main() {
 		}
 	}
 
-	//	move();
     setup_players(black, white);
     setup_board(board, black, white);
     draw_board(board);
 
-	while(1);
+	move();
+	//while(1);
 
 	cleanup_platform();
 
