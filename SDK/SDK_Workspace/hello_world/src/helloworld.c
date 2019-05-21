@@ -267,10 +267,10 @@ void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
     if (batman)
         RGB = 0x38;
     else
-        if (( (startX-40)/30 + (startY-40)/30 ) & 1)
-            RGB = 0x1F5;
-        else
+        if (( (startX-40)/30 + (startY)/30 ) & 1)
             RGB = 0x163;
+        else
+            RGB = 0x1F5;
 
 	// gornja ivica
 	for (x = startX; x < endX; x++) {
@@ -483,6 +483,10 @@ void game(PIECE gray[]) {
 
 	btn_state_t btn_state = NOTHING_PRESSED;
 
+	while(gray[i].piece == DEAD){
+		i++;
+	}
+
 	startX=gray[i].point.x*30+40;
 	startY=gray[i].point.y*30;
 	endX=startX+30;
@@ -498,9 +502,16 @@ void game(PIECE gray[]) {
 
 					Y++;
 
-					if (i > 7 )
+					if (i > 7)
 					{
 						i -= 8;
+						while(gray[i].piece==DEAD){
+							i--;
+
+							if (i == 0)
+								i = 15;
+						}
+
 
 						startX = gray[i].point.x * 30 + 40;
 						startY = gray[i].point.y * 30;
@@ -516,7 +527,15 @@ void game(PIECE gray[]) {
 					Y--;
 
 					if (i < 8) {
+
 						i += 8;
+
+						while(gray[i].piece==DEAD) {
+							i++;
+
+							if (i == 16)
+								i = 0;
+						}
 
 						startX = gray[i].point.x * 30 + 40;
 						startY = gray[i].point.y * 30;
@@ -531,13 +550,23 @@ void game(PIECE gray[]) {
 					draw_cursor(startX, startY, endX, endY, 0);
 
 					X++;
-					if(i<15){
+					if(i<15) {
+
 						i++;
+
+						while(gray[i].piece == DEAD) {
+							i++;
+
+							if ( i == 16)
+								i = 0;
+						}
+
 						startX = gray[i].point.x * 30 + 40;
 						startY = gray[i].point.y * 30;
 						endX=startX+30;
 						endY=startY+30;
 					}
+
 					draw_cursor(startX, startY, endX, endY, 1);
 				}
 			}
@@ -546,9 +575,16 @@ void game(PIECE gray[]) {
 					draw_cursor(startX, startY, endX, endY, 0);
 
 					X--;
-					if(i > 0)
-					{
+					if(i > 0) {
 						i--;
+
+						while(gray[i].piece==DEAD) {
+							i--;
+
+							if ( i == 0)
+								i = 15;
+						}
+
 						startX = gray[i].point.x * 30 + 40;
 						startY = gray[i].point.y * 30;
 						endX=startX+30;
@@ -616,20 +652,23 @@ int main() {
     setup_board(board, black, white);
 
 
-    board[4][3].piece = board[6][3].piece;
+    board[4][3].piece = NULL; //board[6][3].piece;
     board[6][3].piece = NULL;
     white[WIDTH+3].point.x = 3;
     white[WIDTH+3].point.y = 4;
 
+    board[4][6].piece = NULL; //board[7][1].piece;
+    board[7][1].piece = NULL;
+    white[1].point.x = 6;
+    white[1].point.y = 4;
 
-
-
-
+    white[WIDTH+3].piece=DEAD;
+    white[1].piece=DEAD;
 
     draw_board(board);
 
   //  playable();
-	game(black);
+	game(white);
 
 	cleanup_platform();
 
