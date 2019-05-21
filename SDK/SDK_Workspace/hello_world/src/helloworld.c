@@ -30,7 +30,7 @@
 
 // CECA U PARIZU
 
-enum Piece { EMPTY = 0, PAWN = 10, ROOK = 50, KNIGHT = 30, BISHOP = 40, QUEEN = 200, KING = 1000 }; // add dead
+enum Piece { DEAD = 0, PAWN = 10, ROOK = 50, KNIGHT = 30, BISHOP = 40, QUEEN = 200, KING = 1000 };
 
 /* Custom structures used in game */
 
@@ -56,6 +56,10 @@ typedef struct square_st {
 static int player_turn = WHITE;
 static int X = 0;
 static int Y = 0;
+
+static PIECE black[WIDTH<<1] = {};
+static PIECE white[WIDTH<<1] = {};
+static SQUARE board[WIDTH][WIDTH] = {};
 
 
 /* Functions used in game */
@@ -263,10 +267,10 @@ void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
     if (batman)
         RGB = 0x38;
     else
-        if ((X+Y) & 1)
-            RGB = 0x163;
-        else
+        if (( (startX-40)/30 + (startY-40)/30 ) & 1)
             RGB = 0x1F5;
+        else
+            RGB = 0x163;
 
 	// gornja ivica
 	for (x = startX; x < endX; x++) {
@@ -470,75 +474,105 @@ void draw_board(SQUARE board[][WIDTH]) {
 
 
 //function that controls switches and buttons
-void move() {
+void game(PIECE gray[]) {
+	int i = 0, cnt;
 	int startX = 40, startY = 0, endX = 70, endY = 30;
+
 
 	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
 	btn_state_t btn_state = NOTHING_PRESSED;
 
+	startX=gray[i].point.x*30+40;
+	startY=gray[i].point.y*30;
+	endX=startX+30;
+	endY=startY+30;
 	draw_cursor(startX, startY, endX, endY, 1);
 
-	while (1) {
+	while(1) {
 		if (btn_state == NOTHING_PRESSED) {
 			btn_state = SOMETHING_PRESSED;
+
 			if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & DOWN) == 0) {
-				if (endY < 240) {
-                    draw_cursor(startX, startY, endX, endY, 0);
+					draw_cursor(startX, startY, endX, endY, 0);
 
-                    Y++;
+					Y++;
 
-					startY += 30;
-					endY += 30;
+					if (i > 7 )
+					{
+						i -= 8;
+
+						startX = gray[i].point.x * 30 + 40;
+						startY = gray[i].point.y * 30;
+						endX=startX+30;
+						endY=startY+30;
+					}
+
 					draw_cursor(startX, startY, endX, endY, 1);
-				}
+			}
+			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & UP) == 0) {
+					draw_cursor(startX, startY, endX, endY, 0);
+
+					Y--;
+
+					if (i < 8) {
+						i += 8;
+
+						startX = gray[i].point.x * 30 + 40;
+						startY = gray[i].point.y * 30;
+						endX=startX+30;
+						endY=startY+30;
+					}
+
+					draw_cursor(startX, startY, endX, endY, 1);
 			}
 			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & RIGHT) == 0) {
 				if (endX < 280) {
-                    draw_cursor(startX, startY, endX, endY, 0);
+					draw_cursor(startX, startY, endX, endY, 0);
 
-                    X++;
-
-					startX += 30;
-					endX += 30;
+					X++;
+					if(i<15){
+						i++;
+						startX = gray[i].point.x * 30 + 40;
+						startY = gray[i].point.y * 30;
+						endX=startX+30;
+						endY=startY+30;
+					}
 					draw_cursor(startX, startY, endX, endY, 1);
 				}
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & LEFT) == 0) {
+			}
+			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & LEFT) == 0) {
 				if (startX > 40) {
-                    draw_cursor(startX, startY, endX, endY, 0);
+					draw_cursor(startX, startY, endX, endY, 0);
 
-                    X--;
+					X--;
+					if(i > 0)
+					{
+						i--;
+						startX = gray[i].point.x * 30 + 40;
+						startY = gray[i].point.y * 30;
+						endX=startX+30;
+						endY=startY+30;
+					}
 
-					startX -= 30;
-					endX -= 30;
 					draw_cursor(startX, startY, endX, endY, 1);
 				}
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & UP) == 0) {
-				if (startY > 0) {
-                    draw_cursor(startX, startY, endX, endY, 0);
-
-                    Y--;
-
-					startY -= 30;
-					endY -= 30;
-					draw_cursor(startX, startY, endX, endY, 1);
-				}
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & CENTER) == 0) {
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & SW0) != 0)    { //flag
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & SW1) != 0)    {
-			} else { btn_state = NOTHING_PRESSED; }
-		} else { // SOMETHING_PRESSED
-			if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & DOWN) == 0) {
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & RIGHT) == 0) {
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & LEFT) == 0) {
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & UP) == 0) {
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & CENTER) == 0) {
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & SW0) != 0) {
-			} else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & SW1) != 0) {
-			} else {
-				btn_state = NOTHING_PRESSED;
 			}
 		}
+
+		for (cnt=0; cnt < 2000000; cnt++);
+		btn_state = NOTHING_PRESSED;
+	}
+}
+
+
+void playable() {
+	int i, x, y;
+	for (i = 0; i < WIDTH; i++) {
+		x = white[WIDTH+i].point.x * 30 + 40;
+		y = white[WIDTH+i].point.y * 30;
+
+		draw_cursor(x, y, x+30, y+30, 1);
 	}
 }
 
@@ -548,9 +582,6 @@ void move() {
 int main() {
 
 	int x, y, i;
-    PIECE black[WIDTH<<1] = {};
-    PIECE white[WIDTH<<1] = {};
-    SQUARE board[WIDTH][WIDTH] = {};
 
 	init_platform();
 
@@ -583,10 +614,22 @@ int main() {
 
     setup_players(black, white);
     setup_board(board, black, white);
+
+
+    board[4][3].piece = board[6][3].piece;
+    board[6][3].piece = NULL;
+    white[WIDTH+3].point.x = 3;
+    white[WIDTH+3].point.y = 4;
+
+
+
+
+
+
     draw_board(board);
 
-	move();
-	//while(1);
+  //  playable();
+	game(black);
 
 	cleanup_platform();
 
