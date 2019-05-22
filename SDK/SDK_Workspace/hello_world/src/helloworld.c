@@ -10,8 +10,6 @@
 #include "vga_periph_mem.h"
 
 
-
-
 #define UP     0b01000000
 #define DOWN   0b00000100
 #define LEFT   0b00100000
@@ -53,16 +51,141 @@ typedef struct square_st {
 
 /* Global variables used in game */
 
-static int player_turn = WHITE;
-static int X = 0;
-static int Y = 0;
-
 static PIECE black[WIDTH<<1] = {};
 static PIECE white[WIDTH<<1] = {};
 static SQUARE board[WIDTH][WIDTH] = {};
 
+static POINT playable[27];
+
+static int player_turn = BLACK;
 
 /* Functions used in game */
+
+/*
+    drawing cursor and clearing old cursor value, BATMAN 0 [CLEAR]
+                                                  BATMAN 1 [WRITE]
+*/
+void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
+    int RGB;
+    int x, y, i;
+
+    if (batman == 1)
+        RGB = 0x38;
+
+    if (batman == 0)
+        if (( (startX-40)/30 + (startY)/30 ) & 1)
+            RGB = 0x163;
+        else
+            RGB = 0x1F5;
+
+   if (batman == 2)
+	   RGB = 0x3F;
+
+
+	// gornja ivica
+	for (x = startX; x < endX; x++) {
+		for (y = startY; y < startY + 2; y++) {
+			i = y * 320 + x;
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+							+ i * 4, RGB);
+		}
+	}
+
+	// donja ivica
+	for (x = startX; x < endX; x++) {
+		for (y = endY - 2; y < endY; y++) {
+			i = y * 320 + x;
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+							+ i * 4, RGB);
+		}
+	}
+
+	// leva ivica
+	for (x = startX; x < startX + 2; x++) {
+		for (y = startY; y < endY; y++) {
+			i = y * 320 + x;
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+							+ i * 4, RGB);
+		}
+	}
+
+	// desna ivica
+	for (x = endX - 2; x < endX; x++) {
+		for (y = startY; y < endY; y++) {
+			i = y * 320 + x;
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+							+ i * 4, RGB);
+		}
+	}
+}
+
+
+void reset_playable() {
+	int i;
+
+	for (i = 0; i < 28; i++)
+		playable[i].x = playable[i].y = -1;
+}
+
+
+void mark_playable() {
+	int i, startX, startY, endX, endY;
+
+	for (i = 0; i < 28; i++) {
+		if (playable[i].x != -1) {
+			startX = 40 + playable[i].x*30;
+			startY = playable[i].y*30;
+			endX = startX + 30;
+			endY = startY + 30;
+
+			draw_cursor(startX, startY, endX, endY, 2);
+		}
+	}
+}
+
+
+PIECE move_pawn(PIECE pawn) {
+
+	int i = 0;
+
+	reset_playable();
+
+	if (player_turn == BLACK) {
+
+		if (pawn.point.y == 1) {
+			playable[i].x = pawn.point.x;
+			playable[i].y = 3;
+			i++;
+		}
+
+		if (pawn.point.y != 7) {
+			playable[i].x = pawn.point.x;
+			playable[i].y = pawn.point.y + 1;
+			i++;
+		}
+
+	} else {
+		if (pawn.point.y == 6) {
+			playable[i].x = pawn.point.x;
+			playable[i].y = 4;
+			i++;
+		}
+
+		if (pawn.point.y != 0) {
+			playable[i].x = pawn.point.x;
+			playable[i].y = pawn.point.y - 1;
+			i++;
+		}
+	}
+
+	mark_playable();
+
+	return pawn;
+}
 
 void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
 	int x, y;
@@ -256,64 +379,6 @@ void draw_field(POINT out, int color) {
 }
 
 
-/*
-    drawing cursor and clearing old cursor value, BATMAN 0 [CLEAR]
-                                                  BATMAN 1 [WRITE]
-*/
-void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
-    int RGB;
-    int x, y, i;
-
-    if (batman)
-        RGB = 0x38;
-    else
-        if (( (startX-40)/30 + (startY)/30 ) & 1)
-            RGB = 0x163;
-        else
-            RGB = 0x1F5;
-
-	// gornja ivica
-	for (x = startX; x < endX; x++) {
-		for (y = startY; y < startY + 2; y++) {
-			i = y * 320 + x;
-			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, RGB);
-		}
-	}
-
-	// donja ivica
-	for (x = startX; x < endX; x++) {
-		for (y = endY - 2; y < endY; y++) {
-			i = y * 320 + x;
-			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, RGB);
-		}
-	}
-
-	// leva ivica
-	for (x = startX; x < startX + 2; x++) {
-		for (y = startY; y < endY; y++) {
-			i = y * 320 + x;
-			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, RGB);
-		}
-	}
-
-	// desna ivica
-	for (x = endX - 2; x < endX; x++) {
-		for (y = startY; y < endY; y++) {
-			i = y * 320 + x;
-			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, RGB);
-		}
-	}
-}
-
-
 void draw_board(SQUARE board[][WIDTH]) {
 
     POINT in, out;
@@ -474,10 +539,9 @@ void draw_board(SQUARE board[][WIDTH]) {
 
 
 //function that controls switches and buttons
-void game(PIECE gray[]) {
+PIECE select(PIECE gray[], size_t size) {
 	int i = 0, cnt;
-	int startX = 40, startY = 0, endX = 70, endY = 30;
-
+	int startX, startY, endX, endY;
 
 	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
@@ -493,122 +557,179 @@ void game(PIECE gray[]) {
 	endY=startY+30;
 	draw_cursor(startX, startY, endX, endY, 1);
 
-	while(1) {
+	while((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & SW0) == 0) {
 		if (btn_state == NOTHING_PRESSED) {
 			btn_state = SOMETHING_PRESSED;
 
 			if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & DOWN) == 0) {
-					draw_cursor(startX, startY, endX, endY, 0);
+				draw_cursor(startX, startY, endX, endY, 0);
 
-					Y++;
+						 /* 7 */
+				if (i > size/2-1) {
 
-					if (i > 7)
-					{
-						i -= 8;
-						while(gray[i].piece==DEAD){
+					i -= size/2;
+
+					while(gray[i].piece==DEAD){
+
+						if (i == 0)
+							i = size-1;
+						else
 							i--;
-
-							if (i == 0)
-								i = 15;
-						}
-
-
-						startX = gray[i].point.x * 30 + 40;
-						startY = gray[i].point.y * 30;
-						endX=startX+30;
-						endY=startY+30;
 					}
 
-					draw_cursor(startX, startY, endX, endY, 1);
+					startX = gray[i].point.x * 30 + 40;
+					startY = gray[i].point.y * 30;
+					endX=startX+30;
+					endY=startY+30;
+				}
+
+				draw_cursor(startX, startY, endX, endY, 1);
 			}
 			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & UP) == 0) {
-					draw_cursor(startX, startY, endX, endY, 0);
+				draw_cursor(startX, startY, endX, endY, 0);
 
-					Y--;
+				if (i < size/2) {
 
-					if (i < 8) {
+					i += size/2;
 
-						i += 8;
+					while(gray[i].piece==DEAD) {
 
-						while(gray[i].piece==DEAD) {
+						if (i == size)
+							i = 0;
+						else
 							i++;
-
-							if (i == 16)
-								i = 0;
-						}
-
-						startX = gray[i].point.x * 30 + 40;
-						startY = gray[i].point.y * 30;
-						endX=startX+30;
-						endY=startY+30;
 					}
 
-					draw_cursor(startX, startY, endX, endY, 1);
+					startX = gray[i].point.x * 30 + 40;
+					startY = gray[i].point.y * 30;
+					endX=startX+30;
+					endY=startY+30;
+				}
+
+				draw_cursor(startX, startY, endX, endY, 1);
 			}
 			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & RIGHT) == 0) {
-				if (endX < 280) {
-					draw_cursor(startX, startY, endX, endY, 0);
+				draw_cursor(startX, startY, endX, endY, 0);
 
-					X++;
-					if(i<15) {
+				if(i < size) {
 
-						i++;
+					i++;
 
-						while(gray[i].piece == DEAD) {
+					while(gray[i].piece == DEAD || i == size) {
+
+						if (i == size)
+							i = 0;
+						else
 							i++;
-
-							if ( i == 16)
-								i = 0;
-						}
-
-						startX = gray[i].point.x * 30 + 40;
-						startY = gray[i].point.y * 30;
-						endX=startX+30;
-						endY=startY+30;
 					}
 
-					draw_cursor(startX, startY, endX, endY, 1);
+					startX = gray[i].point.x * 30 + 40;
+					startY = gray[i].point.y * 30;
+					endX=startX+30;
+					endY=startY+30;
 				}
+
+				draw_cursor(startX, startY, endX, endY, 1);
 			}
 			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & LEFT) == 0) {
-				if (startX > 40) {
-					draw_cursor(startX, startY, endX, endY, 0);
+				draw_cursor(startX, startY, endX, endY, 0);
 
-					X--;
-					if(i > 0) {
-						i--;
+				if(i > 0) {
 
-						while(gray[i].piece==DEAD) {
+					i--;
+
+					while(gray[i].piece==DEAD) {
+
+						if (i == 0)
+							i = size-1;
+						else
 							i--;
-
-							if ( i == 0)
-								i = 15;
-						}
-
-						startX = gray[i].point.x * 30 + 40;
-						startY = gray[i].point.y * 30;
-						endX=startX+30;
-						endY=startY+30;
 					}
 
-					draw_cursor(startX, startY, endX, endY, 1);
+				} else {
+					i = size-1;
+
+					while(gray[i].piece==DEAD) {
+
+						if (i == 0)
+							i = size-1;
+						else
+							i--;
+					}
 				}
+
+				startX = gray[i].point.x * 30 + 40;
+				startY = gray[i].point.y * 30;
+				endX=startX+30;
+				endY=startY+30;
+
+				draw_cursor(startX, startY, endX, endY, 1);
 			}
 		}
 
 		for (cnt=0; cnt < 2000000; cnt++);
 		btn_state = NOTHING_PRESSED;
 	}
+
+	return gray[i];
 }
 
 
-void playable() {
-	int i, x, y;
-	for (i = 0; i < WIDTH; i++) {
-		x = white[WIDTH+i].point.x * 30 + 40;
-		y = white[WIDTH+i].point.y * 30;
 
-		draw_cursor(x, y, x+30, y+30, 1);
+void play_playable(PIECE piece) {
+	int i = 0, cnt;
+	int startX, startY, endX, endY;
+
+	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
+
+	btn_state_t btn_state = NOTHING_PRESSED;
+
+	startX=piece.point.x*30+40;
+	startY=piece.point.y*30;
+	endX=startX+30;
+	endY=startY+30;
+
+	draw_cursor(startX, startY, endX, endY, 1);
+
+	while((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & SW0) != 0) {
+		if (btn_state == NOTHING_PRESSED) {
+			btn_state = SOMETHING_PRESSED;
+
+
+			if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & RIGHT) == 0) {
+				draw_cursor(startX, startY, endX, endY, 2);
+
+				if(i < 2) {
+
+					i++;
+
+					startX = playable[i].x * 30 + 40;
+					startY = playable[i].y * 30;
+					endX=startX+30;
+					endY=startY+30;
+				}
+
+				draw_cursor(startX, startY, endX, endY, 1);
+			}
+			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & LEFT) == 0) {
+				draw_cursor(startX, startY, endX, endY, 2);
+
+				if(i > 0) {
+
+					i--;
+
+					startX = playable[i].x * 30 + 40;
+					startY = playable[i].y * 30;
+					endX=startX+30;
+					endY=startY+30;
+				}
+
+				draw_cursor(startX, startY, endX, endY, 1);
+			}
+		}
+
+		for (cnt=0; cnt < 2000000; cnt++);
+		btn_state = NOTHING_PRESSED;
 	}
 }
 
@@ -652,10 +773,22 @@ int main() {
     setup_board(board, black, white);
 
 
+    /*
+
     board[4][3].piece = NULL; //board[6][3].piece;
     board[6][3].piece = NULL;
     white[WIDTH+3].point.x = 3;
     white[WIDTH+3].point.y = 4;
+
+    board[0][0].piece = NULL;
+    black[0].piece = DEAD;
+    board[1][0].piece = NULL;
+    black[8].piece = DEAD;
+
+    board[0][7].piece = NULL;
+    board[1][7].piece = NULL;
+    black[7].piece = DEAD;
+    black[15].piece = DEAD;
 
     board[4][6].piece = NULL; //board[7][1].piece;
     board[7][1].piece = NULL;
@@ -665,10 +798,19 @@ int main() {
     white[WIDTH+3].piece=DEAD;
     white[1].piece=DEAD;
 
+    */
+
     draw_board(board);
 
   //  playable();
-	game(white);
+	//PIECE piece = select(black, 16);
+
+    //select(black, 16);
+
+	play_playable( move_pawn( select( black, 16 ) ) );
+
+	while(1);
+
 
 	cleanup_platform();
 
