@@ -57,7 +57,7 @@ static SQUARE board[WIDTH][WIDTH] = {};
 
 static POINT playable[27];
 
-static int player_turn = BLACK;
+static int player_turn = WHITE;
 
 /* Functions used in game */
 
@@ -156,26 +156,28 @@ PIECE move_pawn(PIECE pawn) {
 
 	if (player_turn == BLACK) {
 
-		if (pawn.point.y == 1) {
+		if (pawn.point.y == 1 && board[pawn.point.y+1][pawn.point.x].piece==NULL && board[pawn.point.y+2][pawn.point.x].piece==NULL) {
 			playable[i].x = pawn.point.x;
 			playable[i].y = 3;
 			i++;
 		}
 
-		if (pawn.point.y != 7) {
+		if (pawn.point.y != 7 && board[pawn.point.y+1][pawn.point.x].piece==NULL) {
 			playable[i].x = pawn.point.x;
 			playable[i].y = pawn.point.y + 1;
 			i++;
 		}
 
+
+
 	} else {
-		if (pawn.point.y == 6) {
+		if (pawn.point.y == 6 && board[pawn.point.y-1][pawn.point.x].piece==NULL && board[pawn.point.y-2][pawn.point.x].piece==NULL) {
 			playable[i].x = pawn.point.x;
 			playable[i].y = 4;
 			i++;
 		}
 
-		if (pawn.point.y != 0) {
+		if (pawn.point.y != 0 && board[pawn.point.y-1][pawn.point.x].piece==NULL) {
 			playable[i].x = pawn.point.x;
 			playable[i].y = pawn.point.y - 1;
 			i++;
@@ -779,22 +781,30 @@ int main() {
     board[6][3].piece = NULL;
     white[WIDTH+3].point.x = 3;
     white[WIDTH+3].point.y = 4;
+    */
 
-    board[0][0].piece = NULL;
-    black[0].piece = DEAD;
-    board[1][0].piece = NULL;
-    black[8].piece = DEAD;
 
+
+
+
+    board[2][1].piece=board[1][3].piece;
+    board[1][3].piece = NULL;
+    black[WIDTH+3].point.x = 1;
+    black[WIDTH+3].point.y=	2;
+
+
+    /*
     board[0][7].piece = NULL;
     board[1][7].piece = NULL;
     black[7].piece = DEAD;
     black[15].piece = DEAD;
+*/
 
-    board[4][6].piece = NULL; //board[7][1].piece;
+    board[5][6].piece = board[7][1].piece;
     board[7][1].piece = NULL;
     white[1].point.x = 6;
-    white[1].point.y = 4;
-
+    white[1].point.y = 5;
+/*
     white[WIDTH+3].piece=DEAD;
     white[1].piece=DEAD;
 
@@ -807,7 +817,7 @@ int main() {
 
     //select(black, 16);
 
-	play_playable( move_pawn( select( black, 16 ) ) );
+	play_playable( move_pawn( select( white, 16 ) ) );
 
 	while(1);
 
