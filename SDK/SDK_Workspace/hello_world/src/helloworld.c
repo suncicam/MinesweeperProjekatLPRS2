@@ -59,12 +59,29 @@ static POINT playable[27];
 
 static int player_turn = WHITE;
 
+
 /* Functions used in game */
+
+
+int eatable(POINT pos) {
+
+	// PRAZNO POLJE VRACA 0
+	if (board[pos.y][pos.x].piece == NULL)
+		return 0;  // smes da skocis
+
+	// POTEZ I BOJA AKO SU ISTI, znaci da je situacija u kojoj beli jede belog sto ne sme da se dozvoli.
+	if (board[pos.y][pos.x].piece->color == player_turn)
+		return -1; // ne smes da pojedes
+	else
+		return  1; // smes da pojedes
+}
+
 
 /*
     drawing cursor and clearing old cursor value, BATMAN 0 [CLEAR]
                                                   BATMAN 1 [WRITE]
 */
+
 void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
     int RGB;
     int x, y, i;
@@ -817,7 +834,10 @@ int main() {
 
     //select(black, 16);
 
+
 	play_playable( move_pawn( select( white, 16 ) ) );
+
+
 
 	while(1);
 
