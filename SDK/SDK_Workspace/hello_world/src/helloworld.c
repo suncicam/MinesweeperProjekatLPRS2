@@ -1,8 +1,5 @@
 #include <stdio.h>
-//#include <stdlib.h>     /* srand, rand */
-//#include <time.h>
 #include "bitmap.h"
-
 
 #include "platform.h"
 #include "xparameters.h"
@@ -61,7 +58,7 @@ static SQUARE board[WIDTH][WIDTH] = {};
 
 static POINT playable[27];
 
-static int player_turn = WHITE;
+static int player_turn = BLACK;
 
 
 /* Functions used in game */
@@ -172,7 +169,7 @@ void move_king(PIECE king) {
     pos.x = king.point.x;
 
     if (king.point.y != 0) {
-        pos.y = king.point.y + 1;
+        pos.y = king.point.y - 1;
 
         if ( eatable(pos) != -1 ) {
             playable[k].x = pos.x;
@@ -182,7 +179,7 @@ void move_king(PIECE king) {
     }
 
     if (king.point.y != WIDTH-1) {
-        pos.y = king.point.y - 1;
+        pos.y = king.point.y + 1;
 
         if ( eatable(pos) != -1 ) {
             playable[k].x = pos.x;
@@ -219,7 +216,7 @@ void move_king(PIECE king) {
         pos.x = king.point.x - 1;
         pos.y = king.point.y - 1;
 
-        if ( eatable(pos) != 1 ) {
+        if ( eatable(pos) != -1 ) {
             playable[k].x = pos.x;
             playable[k].y = pos.y;
             k++;
@@ -231,7 +228,7 @@ void move_king(PIECE king) {
         pos.x = king.point.x + 1;
         pos.y = king.point.y - 1;
 
-        if ( eatable(pos) != 1 ) {
+        if ( eatable(pos) != -1 ) {
             playable[k].x = pos.x;
             playable[k].y = pos.y;
             k++;
@@ -243,7 +240,7 @@ void move_king(PIECE king) {
         pos.x = king.point.x - 1;
         pos.y = king.point.y + 1;
 
-        if ( eatable(pos) != 1 ) {
+        if ( eatable(pos) != -1 ) {
             playable[k].x = pos.x;
             playable[k].y = pos.y;
             k++;
@@ -255,7 +252,7 @@ void move_king(PIECE king) {
         pos.x = king.point.x + 1;
         pos.y = king.point.y + 1;
 
-        if ( eatable(pos) != 1 ) {
+        if ( eatable(pos) != -1 ) {
             playable[k].x = pos.x;
             playable[k].y = pos.y;
             k++;
@@ -500,6 +497,296 @@ void move_bishop(PIECE bishop) {
     }
 }
 
+void move_knight(PIECE knight) {
+	int k = 0;
+    POINT pos;
+
+	//POLJA PO COSKOVIMA
+	if (knight.point.y == 0 && knight.point.x == 0) {
+			pos.y = knight.point.y + 1;
+			pos.x = knight.point.x + 2;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y + 2;
+			pos.x = knight.point.x + 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+	if (knight.point.y == 0 && knight.point.x == 7){
+			pos.y = knight.point.y + 1;
+			pos.x = knight.point.x - 2;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y + 2;
+			pos.x = knight.point.x - 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+	if (knight.point.y == 7 && knight.point.x == 0){
+			pos.y = knight.point.y - 2;
+			pos.x = knight.point.x + 1;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y - 1;
+			pos.x = knight.point.x + 2;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+	if (knight.point.y == 7 && knight.point.x == 7){
+			pos.y = knight.point.y - 1;
+			pos.x = knight.point.x - 2;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y - 2;
+			pos.x = knight.point.x - 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+
+
+
+	//POLJA DO COSKOVA
+	if (knight.point.y == 0 && knight.point.x == 1){
+			pos.y = knight.point.y + 2;
+			pos.x = knight.point.x - 1;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y + 2;
+			pos.x = knight.point.x + 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y + 1;
+			pos.x = knight.point.x + 2;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+	if (knight.point.y == 1 && knight.point.x == 0){
+			pos.y = knight.point.y + 2;
+			pos.x = knight.point.x + 1;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y + 1;
+			pos.x = knight.point.x + 2;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y - 1;
+			pos.x = knight.point.x + 2;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+	if (knight.point.y == 0 && knight.point.x == 6){
+			pos.y = knight.point.y + 1;
+			pos.x = knight.point.x - 2;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y + 2;
+			pos.x = knight.point.x + 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y + 1;
+			pos.x = knight.point.x - 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+	if (knight.point.y == 1 && knight.point.x == 7){
+			pos.y = knight.point.y + 1;
+			pos.x = knight.point.x - 2;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y - 1;
+			pos.x = knight.point.x - 2;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y + 2;
+			pos.x = knight.point.x - 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+	if (knight.point.y == 6 && knight.point.x == 0){
+			pos.y = knight.point.y - 2;
+			pos.x = knight.point.x + 1;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y - 1;
+			pos.x = knight.point.x + 2;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y + 1;
+			pos.x = knight.point.x + 2;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+	if (knight.point.y == 7 && knight.point.x == 1){
+			pos.y = knight.point.y - 1;
+			pos.x = knight.point.x + 2;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y - 2;
+			pos.x = knight.point.x + 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y - 2;
+			pos.x = knight.point.x - 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+	if (knight.point.y == 7 && knight.point.x == 6){
+			pos.y = knight.point.y - 1;
+			pos.x = knight.point.x - 2;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y - 2;
+			pos.x = knight.point.x + 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y - 2;
+			pos.x = knight.point.x - 1;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+
+	if (knight.point.y == 6 && knight.point.x == 7){
+			pos.y = knight.point.y - 2;
+			pos.x = knight.point.x - 1;
+			if (eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y - 1;
+			pos.x = knight.point.x - 2;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+
+			pos.y = knight.point.y + 1;
+			pos.x = knight.point.x - 2;
+			if(eatable(pos) != -1) {
+				playable[k].x = pos.x;
+				playable[k].y = pos.y;
+				k++;
+			}
+	}
+}
+
 
 void move_rook(PIECE rook) {
     int x, i, k = 0;
@@ -686,7 +973,7 @@ PIECE for_whom_the_bell_tolls(PIECE piece) {
             move_rook(piece);
             break;
         case KNIGHT:
-            //move_knight(piece);
+          //  move_knight(piece);
             break;
         case BISHOP:
             move_bishop(piece);
@@ -1351,9 +1638,10 @@ int main() {
 
     draw_board(board);
 
-	play_playable(white);
-
-	draw_board(board);
+    while (1) {
+    	play_playable(black);
+		draw_board(board);
+    }
 
 	while(1);
 
