@@ -3,6 +3,7 @@
 //#include <time.h>
 #include "bitmap.h"
 
+
 #include "platform.h"
 #include "xparameters.h"
 #include "xio.h"
@@ -25,8 +26,8 @@
 #define SIZE   8
 #define WIDTH  8
 
-#define WHITE  255
-#define BLACK    0
+#define WHITE   1
+#define BLACK  -1
 
 
 // CECA U PARIZU
@@ -36,18 +37,18 @@ enum Piece { DEAD = 0, PAWN = 1, ROOK = 5, KNIGHT = 3, BISHOP = 4, QUEEN = 20, K
 /* Custom structures used in game */
 
 typedef struct point_st {
-    Xint8 x, y;
+    int x, y;
 } POINT;
 
 typedef struct chess_piece_st {
     POINT point;
-    Xuint8 piece;
-    Xuint8 color;
+    int piece;
+    int color;
 } PIECE;
 
 typedef struct square_st {
     POINT point;
-    Xuint8 color;
+    int color;
     PIECE* piece;
 } SQUARE;
 
@@ -60,43 +61,111 @@ static SQUARE board[WIDTH][WIDTH] = {};
 
 static POINT playable[27];
 
-static Xint8 player_turn = WHITE;
+static int player_turn = WHITE;
 
 
 /* Functions used in game */
 
-PIECE for_whom_the_bell_tolls(PIECE piece) {
-    reset_playable();
 
-    switch (piece.piece) {
-        case PAWN:
-            move_pawn(piece);
-            break;
-        case ROOK:
-            move_rook(piece);
-            break;
-        case KNIGHT:
-            //move_knight(piece);
-            break;
-        case BISHOP:
-            move_bishop(piece);
-            break;
-        case QUEEN:
-            move_queen(piece);
-            break;
-        case KING:
-            move_king(piece);
-            break;
+
+void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
+    unsigned short RGB;
+    int x, y, i;
+
+    if (batman == 1)
+        RGB = 0x38;
+
+    if (batman == 0) {
+        if (( (startX-40)/30 + (startY)/30 ) & 1)
+            RGB = 0x163;
+        else
+            RGB = 0x1F5;
     }
 
-    mark_playable();
+   if (batman == 2)
+	   RGB = 0x3F;
 
-    return piece;
+
+	// gornja ivica
+	for (x = startX; x < endX; x++) {
+		for (y = startY; y < startY + 2; y++) {
+			i = y * 320 + x;
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+							+ i * 4, RGB);
+		}
+	}
+
+	// donja ivica
+	for (x = startX; x < endX; x++) {
+		for (y = endY - 2; y < endY; y++) {
+			i = y * 320 + x;
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+							+ i * 4, RGB);
+		}
+	}
+
+	// leva ivica
+	for (x = startX; x < startX + 2; x++) {
+		for (y = startY; y < endY; y++) {
+			i = y * 320 + x;
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+							+ i * 4, RGB);
+		}
+	}
+
+	// desna ivica
+	for (x = endX - 2; x < endX; x++) {
+		for (y = startY; y < endY; y++) {
+			i = y * 320 + x;
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+							+ i * 4, RGB);
+		}
+	}
+}
+
+void reset_playable() {
+	int i;
+
+	for (i = 0; i < 28; i++) {
+		playable[i].x = playable[i].y = -1;
+	}
 }
 
 
+void mark_playable() {
+	int i, startX, startY, endX, endY;
+
+	for (i = 0; i < 28; i++) {
+		if (playable[i].x != -1) {
+			startX = 40 + playable[i].x*30;
+			startY = playable[i].y*30;
+			endX = startX + 30;
+			endY = startY + 30;
+
+			draw_cursor(startX, startY, endX, endY, 2);
+		}
+	}
+}
+
+int eatable(POINT pos) {
+
+	// PRAZNO POLJE VRACA 0
+	if (board[pos.y][pos.x].piece == NULL)
+		return 0;  // smes da skocis
+
+	// POTEZ I BOJA AKO SU ISTI, znaci da je situacija u kojoj beli jede belog sto ne sme da se dozvoli.
+	if (board[pos.y][pos.x].piece->color == player_turn)
+		return -1; // ne smes da pojedes
+	else
+		return  1; // smes da pojedes
+}
+
 void move_king(PIECE king) {
-    Xuint8 k = 0;
+    int k = 0;
     POINT pos;
 
     // GORE DOLE
@@ -196,10 +265,7 @@ void move_king(PIECE king) {
 
 
 void move_queen(PIECE queen) {
-
-    // obavezan deo inicirati sa promenljivima koje ce se koristiti
-    Xint8 x, i, j;
-    Xuint8 k = 0;
+    int x, i, j, k = 0;
     POINT pos;
 
     // provera za gore
@@ -354,8 +420,7 @@ void move_queen(PIECE queen) {
 }
 
 void move_bishop(PIECE bishop) {
-    Xint8 x, i, j;
-    Xuint k = 0;
+    int x, i, j, k = 0;
     POINT pos;
 
     // provera za gore levo
@@ -437,8 +502,7 @@ void move_bishop(PIECE bishop) {
 
 
 void move_rook(PIECE rook) {
-    Xint8 x;
-    Xuint8 i, k = 0;
+    int x, i, k = 0;
     POINT pos;
 
     // provera za gore
@@ -599,7 +663,7 @@ void move_pawn(PIECE pawn) {
 
                 pos.y++;
                 // 2 prazno polje ?
-                if (pawn.point.y == 6) {
+                if (pawn.point.y == 1) {
                     if ( eatable(pos) == 0 ) {
                         playable[k].x = pos.x;
                         playable[k].y = pos.y;
@@ -611,18 +675,33 @@ void move_pawn(PIECE pawn) {
     }
 }
 
+PIECE for_whom_the_bell_tolls(PIECE piece) {
+    reset_playable();
 
-int eatable(POINT pos) {
+    switch (piece.piece) {
+        case PAWN:
+            move_pawn(piece);
+            break;
+        case ROOK:
+            move_rook(piece);
+            break;
+        case KNIGHT:
+            //move_knight(piece);
+            break;
+        case BISHOP:
+            move_bishop(piece);
+            break;
+        case QUEEN:
+            move_queen(piece);
+            break;
+        case KING:
+            move_king(piece);
+            break;
+    }
 
-	// PRAZNO POLJE VRACA 0
-	if (board[pos.y][pos.x].piece == NULL)
-		return 0;  // smes da skocis
+    mark_playable();
 
-	// POTEZ I BOJA AKO SU ISTI, znaci da je situacija u kojoj beli jede belog sto ne sme da se dozvoli.
-	if (board[pos.y][pos.x].piece->color == player_turn)
-		return -1; // ne smes da pojedes
-	else
-		return  1; // smes da pojedes
+    return piece;
 }
 
 void swap(POINT from, POINT to) {
@@ -644,97 +723,8 @@ void swap(POINT from, POINT to) {
     board[from.y][from.x].piece = NULL;
 }
 
-/*
-    drawing cursor and clearing old cursor value, BATMAN 0 [CLEAR]
-                                                  BATMAN 1 [WRITE]
-*/
-
-void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
-    Xuint16 RGB;
-    Xuint16 x, y, i;
-
-    if (batman == 1)
-        RGB = 0x38;
-
-    if (batman == 0)
-        if (( (startX-40)/30 + (startY)/30 ) & 1)
-            RGB = 0x163;
-        else
-            RGB = 0x1F5;
-
-   if (batman == 2)
-	   RGB = 0x3F;
-
-
-	// gornja ivica
-	for (x = startX; x < endX; x++) {
-		for (y = startY; y < startY + 2; y++) {
-			i = y * 320 + x;
-			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, RGB);
-		}
-	}
-
-	// donja ivica
-	for (x = startX; x < endX; x++) {
-		for (y = endY - 2; y < endY; y++) {
-			i = y * 320 + x;
-			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, RGB);
-		}
-	}
-
-	// leva ivica
-	for (x = startX; x < startX + 2; x++) {
-		for (y = startY; y < endY; y++) {
-			i = y * 320 + x;
-			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, RGB);
-		}
-	}
-
-	// desna ivica
-	for (x = endX - 2; x < endX; x++) {
-		for (y = startY; y < endY; y++) {
-			i = y * 320 + x;
-			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, RGB);
-		}
-	}
-}
-
-
-void reset_playable() {
-	Xuint8 i;
-
-	for (i = 0; i < 28; i++) {
-		playable[i].x = playable[i].y = -1;
-	}
-}
-
-
-void mark_playable() {
-	int i, startX, startY, endX, endY;
-
-	for (i = 0; i < 28; i++) {
-		if (playable[i].x != -1) {
-			startX = 40 + playable[i].x*30;
-			startY = playable[i].y*30;
-			endX = startX + 30;
-			endY = startY + 30;
-
-			draw_cursor(startX, startY, endX, endY, 2);
-		}
-	}
-}
-
-
 void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
-	Xuint8 x, y;
+	int x, y;
     for (y = 0; y < WIDTH; y++) {
         for (x = 0; x < WIDTH; x++) {
             board[y][x].point.x = x;
@@ -762,7 +752,7 @@ void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
 void setup_players(PIECE black[], PIECE white[]) {
 
     // PAWNS Black & White
-	Xuint8 i;
+	int i;
 
     for (i = 0; i < WIDTH; i++) {
         black[WIDTH+i].point.x = i;
@@ -846,29 +836,29 @@ void setup_players(PIECE black[], PIECE white[]) {
 
     black[4].point.x = 4;
     black[4].point.y = 0;
-    black[4].piece = QUEEN;
+    black[4].piece = KING;
     black[4].color = BLACK;
 
     white[4].point.x = 4;
     white[4].point.y = 7;
-    white[4].piece = QUEEN;
+    white[4].piece = KING;
     white[4].color = WHITE;
 
     // KING's Black & White
 
     black[3].point.x = 3;
     black[3].point.y = 0;
-    black[3].piece = KING;
+    black[3].piece = QUEEN;
     black[3].color = BLACK;
 
     white[3].point.x = 3;
     white[3].point.y = 7;
-    white[3].piece = KING;
+    white[3].piece = QUEEN;
     white[3].color = WHITE;
 }
 
 void draw_piece(POINT in, POINT out) {
-    Xuint8 R, G, B, size = 30;
+    int R, G, B, size = 30;
     unsigned short x, y, RGB, tmp = 0;
     int iy, ix, ii, ox, oy, oi;
 
@@ -882,7 +872,7 @@ void draw_piece(POINT in, POINT out) {
 			iy = in.y + y;
 			ii = iy * bitmap.width + ix;
 
-			tmp = ( (Xuint16)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 1] << 8 ) | (unsigned short)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 0];
+			tmp = ( (unsigned short)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 1] << 8 ) | (unsigned short)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 0];
 
 			R =   ((tmp >> 0)  & 0x1f) >> 2;
 
@@ -904,7 +894,7 @@ void draw_piece(POINT in, POINT out) {
 
 void draw_field(POINT out, int color) {
     unsigned short RGB; // beton verzija "crna" ili "bela"
-    Xuint8 x, y;
+    int x, y;
     int ox, oy, oi;
 
     size_t size = 30;
@@ -928,7 +918,7 @@ void draw_field(POINT out, int color) {
 void draw_board(SQUARE board[][WIDTH]) {
 
     POINT in, out;
-    Xuint8 x, y;
+    int x, y;
 
     out.x = out.y = 0;
 
@@ -1086,8 +1076,7 @@ void draw_board(SQUARE board[][WIDTH]) {
 
 //function that controls switches and buttons
 PIECE select(PIECE gray[]) {
-	Xuint8 i = 0;
-	int startX, startY, endX, endY, cnt;
+	int startX, startY, endX, endY, cnt, i = 0;
 
 	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
@@ -1220,15 +1209,30 @@ PIECE select(PIECE gray[]) {
 	return gray[i];
 }
 
+int foo() {
+	int i;
+
+	for (i = 0; i < 28; i++)
+		if (playable[i].x != -1)
+			return 1;
+
+	return 0;
+}
 
 
-void play_playable(PIECE piece) {
-	Xuint8 i = 0;
-	int startX, startY, endX, endY, cnt;
+void play_playable(PIECE gray[]) {
+	int startX, startY, endX, endY, cnt, i = 0;
+	PIECE piece;
 
 	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
 	btn_state_t btn_state = NOTHING_PRESSED;
+
+	reset_playable();
+
+	while (foo() == 0) {
+		piece = for_whom_the_bell_tolls( select( gray ));
+	}
 
 	startX=piece.point.x*30+40;
 	startY=piece.point.y*30;
@@ -1302,7 +1306,7 @@ int main() {
 
 	int x, y, i;
 
-	POINT a, b;
+	//POINT a, b;
 
 	init_platform();
 
@@ -1337,16 +1341,17 @@ int main() {
     setup_board(board, black, white);
 
 
-    a.x = 4;
-    a.y = 7;
-    b.y = 4;
-    b.x = 4;
-    swap(a, b);
+    //a.x = 3;
+    //a.y = 1;
+    //b.y = 2;
+    //b.x = 2;
+
+    //swap(a, b);
 
 
     draw_board(board);
 
-	play_playable( for_whom_the_bell_tolls( select ( white ) ) );
+	play_playable(white);
 
 	draw_board(board);
 
