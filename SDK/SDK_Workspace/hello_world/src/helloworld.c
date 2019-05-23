@@ -9,6 +9,9 @@
 #include "xil_exception.h"
 #include "vga_periph_mem.h"
 
+// TO DO: zameniti sve sa int ???
+// TO DO: kraj i konj 
+// TO DO: ...
 
 #define UP     0b01000000
 #define DOWN   0b00000100
@@ -22,8 +25,8 @@
 #define SIZE   8
 #define WIDTH  8
 
-#define WHITE   1
-#define BLACK  -1
+#define WHITE  255
+#define BLACK    0
 
 
 // CECA U PARIZU
@@ -38,13 +41,13 @@ typedef struct point_st {
 
 typedef struct chess_piece_st {
     POINT point;
-    Xint8 piece;
-    char color;
+    Xuint8 piece;
+    Xuint8 color;
 } PIECE;
 
 typedef struct square_st {
     POINT point;
-    Xint8 color;
+    Xuint8 color;
     PIECE* piece;
 } SQUARE;
 
@@ -93,7 +96,7 @@ PIECE for_whom_the_bell_tolls(PIECE piece) {
 
 
 void move_king(PIECE king) {
-    Xint8 k = 0;
+    Xuint8 k = 0;
     POINT pos;
 
     // GORE DOLE
@@ -195,7 +198,8 @@ void move_king(PIECE king) {
 void move_queen(PIECE queen) {
 
     // obavezan deo inicirati sa promenljivima koje ce se koristiti
-    Xint8 x, i, j, k = 0;
+    Xint8 x, i, j;
+    Xuint8 k = 0;
     POINT pos;
 
     // provera za gore
@@ -350,7 +354,8 @@ void move_queen(PIECE queen) {
 }
 
 void move_bishop(PIECE bishop) {
-    Xint8 x, i, j, k = 0;
+    Xint8 x, i, j;
+    Xuint k = 0;
     POINT pos;
 
     // provera za gore levo
@@ -432,7 +437,8 @@ void move_bishop(PIECE bishop) {
 
 
 void move_rook(PIECE rook) {
-    int x, i, k = 0;
+    Xint8 x;
+    Xuint8 i, k = 0;
     POINT pos;
 
     // provera za gore
@@ -703,7 +709,7 @@ void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
 
 
 void reset_playable() {
-	int i;
+	Xuint8 i;
 
 	for (i = 0; i < 28; i++) {
 		playable[i].x = playable[i].y = -1;
@@ -728,7 +734,7 @@ void mark_playable() {
 
 
 void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
-	int x, y;
+	Xuint8 x, y;
     for (y = 0; y < WIDTH; y++) {
         for (x = 0; x < WIDTH; x++) {
             board[y][x].point.x = x;
@@ -756,7 +762,7 @@ void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
 void setup_players(PIECE black[], PIECE white[]) {
 
     // PAWNS Black & White
-	int i;
+	Xuint8 i;
 
     for (i = 0; i < WIDTH; i++) {
         black[WIDTH+i].point.x = i;
@@ -863,8 +869,8 @@ void setup_players(PIECE black[], PIECE white[]) {
 
 void draw_piece(POINT in, POINT out) {
     Xuint8 R, G, B, size = 30;
-    Xuint16 RGB, tmp = 0;
-    Xuint16 x, y, iy, ix, ii, ox, oy, oi;
+    unsigned short x, y, RGB, tmp = 0;
+    int iy, ix, ii, ox, oy, oi;
 
 	for (y = 0; y < size; y++) {
 		for (x = 0; x < size; x++) {
@@ -897,8 +903,9 @@ void draw_piece(POINT in, POINT out) {
 
 
 void draw_field(POINT out, int color) {
-    Xuint16 RGB; // beton verzija "crna" ili "bela"
-    Xuint16 x, y, ox, oy, oi;
+    unsigned short RGB; // beton verzija "crna" ili "bela"
+    Xuint8 x, y;
+    int ox, oy, oi;
 
     size_t size = 30;
 
@@ -1080,8 +1087,7 @@ void draw_board(SQUARE board[][WIDTH]) {
 //function that controls switches and buttons
 PIECE select(PIECE gray[]) {
 	Xuint8 i = 0;
-	Xuint16 startX, startY, endX, endY;
-	Xuint32 cnt;
+	int startX, startY, endX, endY, cnt;
 
 	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
@@ -1218,8 +1224,7 @@ PIECE select(PIECE gray[]) {
 
 void play_playable(PIECE piece) {
 	Xuint8 i = 0;
-	Xuint16 startX, startY, endX, endY;
-	Xuint32 cnt;
+	int startX, startY, endX, endY, cnt;
 
 	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
@@ -1295,7 +1300,7 @@ void play_playable(PIECE piece) {
 
 int main() {
 
-	Xuint16 x, y, i;
+	int x, y, i;
 
 	POINT a, b;
 
