@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include <stdlib.h>     /* srand, rand */
-#include <time.h>
+//#include <stdlib.h>     /* srand, rand */
+//#include <time.h>
 #include "bitmap.h"
 
 #include "platform.h"
@@ -22,29 +22,29 @@
 #define SIZE   8
 #define WIDTH  8
 
-#define WHITE  1
-#define BLACK -1
+#define WHITE   1
+#define BLACK  -1
 
 
 // CECA U PARIZU
 
-enum Piece { DEAD = 0, PAWN = 10, ROOK = 50, KNIGHT = 30, BISHOP = 40, QUEEN = 200, KING = 1000 };
+enum Piece { DEAD = 0, PAWN = 1, ROOK = 5, KNIGHT = 3, BISHOP = 4, QUEEN = 20, KING = 100 };
 
 /* Custom structures used in game */
 
 typedef struct point_st {
-    int x, y;
+    Xint8 x, y;
 } POINT;
 
 typedef struct chess_piece_st {
     POINT point;
-    int piece;
-    int color;
+    Xint8 piece;
+    char color;
 } PIECE;
 
 typedef struct square_st {
     POINT point;
-    int color;
+    Xint8 color;
     PIECE* piece;
 } SQUARE;
 
@@ -57,10 +57,553 @@ static SQUARE board[WIDTH][WIDTH] = {};
 
 static POINT playable[27];
 
-static int player_turn = WHITE;
+static Xint8 player_turn = WHITE;
 
 
 /* Functions used in game */
+
+PIECE for_whom_the_bell_tolls(PIECE piece) {
+    reset_playable();
+
+    switch (piece.piece) {
+        case PAWN:
+            move_pawn(piece);
+            break;
+        case ROOK:
+            move_rook(piece);
+            break;
+        case KNIGHT:
+            //move_knight(piece);
+            break;
+        case BISHOP:
+            move_bishop(piece);
+            break;
+        case QUEEN:
+            move_queen(piece);
+            break;
+        case KING:
+            move_king(piece);
+            break;
+    }
+
+    mark_playable();
+
+    return piece;
+}
+
+
+void move_king(PIECE king) {
+    Xint8 k = 0;
+    POINT pos;
+
+    // GORE DOLE
+    pos.x = king.point.x;
+
+    if (king.point.y != 0) {
+        pos.y = king.point.y + 1;
+
+        if ( eatable(pos) != -1 ) {
+            playable[k].x = pos.x;
+            playable[k].y = pos.y;
+            k++;
+        }
+    }
+
+    if (king.point.y != WIDTH-1) {
+        pos.y = king.point.y - 1;
+
+        if ( eatable(pos) != -1 ) {
+            playable[k].x = pos.x;
+            playable[k].y = pos.y;
+            k++;
+        }
+    }
+
+    // LEVO DESNO
+    pos.y = king.point.y;
+
+    if (king.point.x != 0) {
+        pos.x = king.point.x - 1;
+
+        if ( eatable(pos) != -1 ) {
+            playable[k].x = pos.x;
+            playable[k].y = pos.y;
+            k++;
+        }
+    }
+
+    if (king.point.x != WIDTH-1) {
+        pos.x = king.point.x + 1;
+
+        if ( eatable(pos) != -1 ) {
+            playable[k].x = pos.x;
+            playable[k].y = pos.y;
+            k++;
+        }
+    }
+
+    // GORE LEVO
+    if (king.point.y != 0 && king.point.x != 0) {
+        pos.x = king.point.x - 1;
+        pos.y = king.point.y - 1;
+
+        if ( eatable(pos) != 1 ) {
+            playable[k].x = pos.x;
+            playable[k].y = pos.y;
+            k++;
+        }
+    }
+
+    // GORE DESNO
+    if (king.point.y != 0 && king.point.x != WIDTH-1) {
+        pos.x = king.point.x + 1;
+        pos.y = king.point.y - 1;
+
+        if ( eatable(pos) != 1 ) {
+            playable[k].x = pos.x;
+            playable[k].y = pos.y;
+            k++;
+        }
+    }
+
+    // DOLE LEVO
+    if (king.point.y != WIDTH-1 && king.point.x != 0) {
+        pos.x = king.point.x - 1;
+        pos.y = king.point.y + 1;
+
+        if ( eatable(pos) != 1 ) {
+            playable[k].x = pos.x;
+            playable[k].y = pos.y;
+            k++;
+        }
+    }
+
+    // DOLE DESNO
+    if (king.point.y != WIDTH-1 && king.point.x != WIDTH-1) {
+        pos.x = king.point.x + 1;
+        pos.y = king.point.y + 1;
+
+        if ( eatable(pos) != 1 ) {
+            playable[k].x = pos.x;
+            playable[k].y = pos.y;
+            k++;
+        }
+    }
+}
+
+
+void move_queen(PIECE queen) {
+
+    // obavezan deo inicirati sa promenljivima koje ce se koristiti
+    Xint8 x, i, j, k = 0;
+    POINT pos;
+
+    // provera za gore
+    pos.x = queen.point.x; // X se ne menja za UP & DOWN
+    for (i = (queen.point.y - 1); i >= 0; i--) {
+        pos.y = i;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za dole
+    for (i = (queen.point.y + 1); i < WIDTH; i++) {
+        pos.y = i;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za levo
+    pos.y = queen.point.y; // Y se ne menja za LEFT & RIGHT
+    for (i = (queen.point.x - 1); i >= 0; i--) {
+        pos.x = i;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za desno
+    for (i = (queen.point.x + 1); i < WIDTH; i++) {
+        pos.x = i;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za gore levo
+    for (i = (queen.point.x - 1), j = (queen.point.y - 1); i >= 0 && j >= 0; i--, j--) {
+        pos.x = i;
+        pos.y = j;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za gore desno
+    for (i = (queen.point.x + 1), j = (queen.point.y - 1); i < WIDTH && j >= 0; i++, j--) {
+        pos.x = i;
+        pos.y = j;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za dole levo
+    for (i = (queen.point.x - 1), j = (queen.point.y + 1); i >= 0 && j < WIDTH; i--, j++) {
+        pos.x = i;
+        pos.y = j;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za dole desno
+    for (i = (queen.point.x + 1), j = (queen.point.y + 1); i < WIDTH && j < WIDTH; i++, j++) {
+        pos.x = i;
+        pos.y = j;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+}
+
+void move_bishop(PIECE bishop) {
+    Xint8 x, i, j, k = 0;
+    POINT pos;
+
+    // provera za gore levo
+    for (i = (bishop.point.x - 1), j = (bishop.point.y - 1); i >= 0 && j >= 0; i--, j--) {
+        pos.x = i;
+        pos.y = j;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za gore desno
+    for (i = (bishop.point.x + 1), j = (bishop.point.y - 1); i < WIDTH && j >= 0; i++, j--) {
+        pos.x = i;
+        pos.y = j;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za dole levo
+    for (i = (bishop.point.x - 1), j = (bishop.point.y + 1); i >= 0 && j < WIDTH; i--, j++) {
+        pos.x = i;
+        pos.y = j;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za dole desno
+    for (i = (bishop.point.x + 1), j = (bishop.point.y + 1); i < WIDTH && j < WIDTH; i++, j++) {
+        pos.x = i;
+        pos.y = j;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+}
+
+
+void move_rook(PIECE rook) {
+    int x, i, k = 0;
+    POINT pos;
+
+    // provera za gore
+    pos.x = rook.point.x; // X se ne menja za UP & DOWN
+    for (i = (rook.point.y - 1); i >= 0; i--) {
+        pos.y = i;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za dole
+    for (i = (rook.point.y + 1); i < WIDTH; i++) {
+        pos.y = i;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za levo
+    pos.y = rook.point.y; // Y se ne menja za LEFT & RIGHT
+    for (i = (rook.point.x - 1); i >= 0; i--) {
+        pos.x = i;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+
+    // provera za desno
+    for (i = (rook.point.x + 1); i < WIDTH; i++) {
+        pos.x = i;
+
+        x = eatable(pos);
+
+        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+            break;
+
+        // dodavanje u playable i povecavanje brojaca
+        playable[k].x = pos.x;
+        playable[k].y = pos.y;
+        k++;
+
+        if ( x == 1 ) // sme da jede ali ne sme dalje
+            break;
+    }
+}
+
+
+void move_pawn(PIECE pawn) {
+    int k = 0;
+    POINT pos;
+
+    if (player_turn == WHITE) {
+
+        // vrth table ?
+        if (pawn.point.y != 0) {
+            pos.y = pawn.point.y - 1;
+
+            // ako nisi u levom cosku smes da jedes.
+            if ( pawn.point.x != 0 ) {
+                pos.x = pawn.point.x - 1;
+                if ( eatable(pos) == 1 ) {
+                    playable[k].x = pos.x;
+                    playable[k].y = pos.y;
+                    k++;
+                }
+            }
+
+            // ako nisi u desnom cosku smes da jedes.
+            if ( pawn.point.x != 7 ) {
+                pos.x = pawn.point.x + 1;
+                if ( eatable(pos) == 1) {
+                    playable[k].x = pos.x;
+                    playable[k].y = pos.y;
+                    k++;
+                }
+            }
+
+            // prazno polje iznad
+            pos.x = pawn.point.x;
+            if ( eatable(pos) == 0 ) {
+                playable[k].x = pos.x;
+                playable[k].y = pos.y;
+                k++;
+
+                pos.y--;
+                // 2 prazno polje ?
+                if (pawn.point.y == 6) {
+                    if ( eatable(pos) == 0 ) {
+                        playable[k].x = pos.x;
+                        playable[k].y = pos.y;
+                        k++;
+                    }
+                }
+            }
+        }
+    } else {
+        // dno table ?
+        if (pawn.point.y != 7) {
+            pos.y = pawn.point.y + 1;
+
+            // ako nisi u levom cosku smes da jedes.
+            if ( pawn.point.x != 0 ) {
+                pos.x = pawn.point.x - 1;
+                if ( eatable(pos) == 1 ) {
+                    playable[k].x = pos.x;
+                    playable[k].y = pos.y;
+                    k++;
+                }
+            }
+
+            // ako nisi u desnom cosku smes da jedes.
+            if ( pawn.point.x != 7 ) {
+                pos.x = pawn.point.x + 1;
+                if ( eatable(pos) == 1) {
+                    playable[k].x = pos.x;
+                    playable[k].y = pos.y;
+                    k++;
+                }
+            }
+
+            // prazno polje ispod
+            pos.x = pawn.point.x;
+            if ( eatable(pos) == 0 ) {
+                playable[k].x = pos.x;
+                playable[k].y = pos.y;
+                k++;
+
+                pos.y++;
+                // 2 prazno polje ?
+                if (pawn.point.y == 6) {
+                    if ( eatable(pos) == 0 ) {
+                        playable[k].x = pos.x;
+                        playable[k].y = pos.y;
+                        k++;
+                    }
+                }
+            }
+        }
+    }
+}
 
 
 int eatable(POINT pos) {
@@ -76,6 +619,24 @@ int eatable(POINT pos) {
 		return  1; // smes da pojedes
 }
 
+void swap(POINT from, POINT to) {
+
+    // ako je neko bio na toj poziciji vise nije
+    if (board[to.y][to.x].piece != NULL) {
+        board[to.y][to.x].piece->piece = DEAD; // got killed brah
+
+        // TO DO: if kralj game over
+    }
+
+    // pokazivac sa novog polja pokazuje na figuru
+    board[to.y][to.x].piece = board[from.y][from.x].piece;
+    // update X i Y za figuru na vrednosti novog polja
+    board[to.y][to.x].piece->point.x = to.x;
+    board[to.y][to.x].piece->point.y = to.y;
+
+    // brisemo pokazivac sa starog polja
+    board[from.y][from.x].piece = NULL;
+}
 
 /*
     drawing cursor and clearing old cursor value, BATMAN 0 [CLEAR]
@@ -83,8 +644,8 @@ int eatable(POINT pos) {
 */
 
 void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
-    int RGB;
-    int x, y, i;
+    Xuint16 RGB;
+    Xuint16 x, y, i;
 
     if (batman == 1)
         RGB = 0x38;
@@ -144,8 +705,9 @@ void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
 void reset_playable() {
 	int i;
 
-	for (i = 0; i < 28; i++)
+	for (i = 0; i < 28; i++) {
 		playable[i].x = playable[i].y = -1;
+	}
 }
 
 
@@ -164,47 +726,6 @@ void mark_playable() {
 	}
 }
 
-
-PIECE move_pawn(PIECE pawn) {
-
-	int i = 0;
-
-	reset_playable();
-
-	if (player_turn == BLACK) {
-
-		if (pawn.point.y == 1 && board[pawn.point.y+1][pawn.point.x].piece==NULL && board[pawn.point.y+2][pawn.point.x].piece==NULL) {
-			playable[i].x = pawn.point.x;
-			playable[i].y = 3;
-			i++;
-		}
-
-		if (pawn.point.y != 7 && board[pawn.point.y+1][pawn.point.x].piece==NULL) {
-			playable[i].x = pawn.point.x;
-			playable[i].y = pawn.point.y + 1;
-			i++;
-		}
-
-
-
-	} else {
-		if (pawn.point.y == 6 && board[pawn.point.y-1][pawn.point.x].piece==NULL && board[pawn.point.y-2][pawn.point.x].piece==NULL) {
-			playable[i].x = pawn.point.x;
-			playable[i].y = 4;
-			i++;
-		}
-
-		if (pawn.point.y != 0 && board[pawn.point.y-1][pawn.point.x].piece==NULL) {
-			playable[i].x = pawn.point.x;
-			playable[i].y = pawn.point.y - 1;
-			i++;
-		}
-	}
-
-	mark_playable();
-
-	return pawn;
-}
 
 void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
 	int x, y;
@@ -341,10 +862,9 @@ void setup_players(PIECE black[], PIECE white[]) {
 }
 
 void draw_piece(POINT in, POINT out) {
-    int RGB, R, G, B;
-    unsigned short tmp = 0;
-    size_t size = 30;
-    int x, y, iy, ix, ii, ox, oy, oi;
+    Xuint8 R, G, B, size = 30;
+    Xuint16 RGB, tmp = 0;
+    Xuint16 x, y, iy, ix, ii, ox, oy, oi;
 
 	for (y = 0; y < size; y++) {
 		for (x = 0; x < size; x++) {
@@ -356,7 +876,7 @@ void draw_piece(POINT in, POINT out) {
 			iy = in.y + y;
 			ii = iy * bitmap.width + ix;
 
-			tmp = ( (unsigned short)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 1] << 8 ) | (unsigned short)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 0];
+			tmp = ( (Xuint16)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 1] << 8 ) | (unsigned short)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 0];
 
 			R =   ((tmp >> 0)  & 0x1f) >> 2;
 
@@ -377,8 +897,8 @@ void draw_piece(POINT in, POINT out) {
 
 
 void draw_field(POINT out, int color) {
-    int RGB; // beton verzija "crna" ili "bela"
-    int x, y, ox, oy, oi;
+    Xuint16 RGB; // beton verzija "crna" ili "bela"
+    Xuint16 x, y, ox, oy, oi;
 
     size_t size = 30;
 
@@ -401,7 +921,7 @@ void draw_field(POINT out, int color) {
 void draw_board(SQUARE board[][WIDTH]) {
 
     POINT in, out;
-    int x, y;
+    Xuint8 x, y;
 
     out.x = out.y = 0;
 
@@ -558,9 +1078,10 @@ void draw_board(SQUARE board[][WIDTH]) {
 
 
 //function that controls switches and buttons
-PIECE select(PIECE gray[], size_t size) {
-	int i = 0, cnt;
-	int startX, startY, endX, endY;
+PIECE select(PIECE gray[]) {
+	Xuint8 i = 0;
+	Xuint16 startX, startY, endX, endY;
+	Xuint32 cnt;
 
 	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
@@ -584,14 +1105,14 @@ PIECE select(PIECE gray[], size_t size) {
 				draw_cursor(startX, startY, endX, endY, 0);
 
 						 /* 7 */
-				if (i > size/2-1) {
+				if (i > 7) {
 
-					i -= size/2;
+					i -= 8;
 
 					while(gray[i].piece==DEAD){
 
 						if (i == 0)
-							i = size-1;
+							i = 15;
 						else
 							i--;
 					}
@@ -607,13 +1128,13 @@ PIECE select(PIECE gray[], size_t size) {
 			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & UP) == 0) {
 				draw_cursor(startX, startY, endX, endY, 0);
 
-				if (i < size/2) {
+				if (i < 8) {
 
-					i += size/2;
+					i += 8;
 
 					while(gray[i].piece==DEAD) {
 
-						if (i == size)
+						if (i == 16)
 							i = 0;
 						else
 							i++;
@@ -630,13 +1151,13 @@ PIECE select(PIECE gray[], size_t size) {
 			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & RIGHT) == 0) {
 				draw_cursor(startX, startY, endX, endY, 0);
 
-				if(i < size) {
+				if(i < 16) {
 
 					i++;
 
-					while(gray[i].piece == DEAD || i == size) {
+					while(gray[i].piece == DEAD || i == 16) {
 
-						if (i == size)
+						if (i == 16)
 							i = 0;
 						else
 							i++;
@@ -660,18 +1181,18 @@ PIECE select(PIECE gray[], size_t size) {
 					while(gray[i].piece==DEAD) {
 
 						if (i == 0)
-							i = size-1;
+							i = 15;
 						else
 							i--;
 					}
 
 				} else {
-					i = size-1;
+					i = 15;
 
 					while(gray[i].piece==DEAD) {
 
 						if (i == 0)
-							i = size-1;
+							i = 15;
 						else
 							i--;
 					}
@@ -696,8 +1217,9 @@ PIECE select(PIECE gray[], size_t size) {
 
 
 void play_playable(PIECE piece) {
-	int i = 0, cnt;
-	int startX, startY, endX, endY;
+	Xuint8 i = 0;
+	Xuint16 startX, startY, endX, endY;
+	Xuint32 cnt;
 
 	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
@@ -718,9 +1240,16 @@ void play_playable(PIECE piece) {
 			if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & RIGHT) == 0) {
 				draw_cursor(startX, startY, endX, endY, 2);
 
-				if(i < 2) {
+				if(i < 28) {
 
 					i++;
+
+					while (playable[i].x == -1 && i < 28) {
+						i++;
+
+						if (i == 28)
+							i = 0;
+					}
 
 					startX = playable[i].x * 30 + 40;
 					startY = playable[i].y * 30;
@@ -737,6 +1266,13 @@ void play_playable(PIECE piece) {
 
 					i--;
 
+					while(playable[i].x == -1 && i >= 0) {
+						i--;
+
+						if (i == -1)
+							i = 27;
+					}
+
 					startX = playable[i].x * 30 + 40;
 					startY = playable[i].y * 30;
 					endX=startX+30;
@@ -750,6 +1286,8 @@ void play_playable(PIECE piece) {
 		for (cnt=0; cnt < 2000000; cnt++);
 		btn_state = NOTHING_PRESSED;
 	}
+
+	swap(piece.point, playable[i]);
 }
 
 
@@ -757,7 +1295,9 @@ void play_playable(PIECE piece) {
 
 int main() {
 
-	int x, y, i;
+	Xuint16 x, y, i;
+
+	POINT a, b;
 
 	init_platform();
 
@@ -792,52 +1332,18 @@ int main() {
     setup_board(board, black, white);
 
 
-    /*
+    a.x = 4;
+    a.y = 7;
+    b.y = 4;
+    b.x = 4;
+    swap(a, b);
 
-    board[4][3].piece = NULL; //board[6][3].piece;
-    board[6][3].piece = NULL;
-    white[WIDTH+3].point.x = 3;
-    white[WIDTH+3].point.y = 4;
-    */
-
-
-
-
-
-    board[2][1].piece=board[1][3].piece;
-    board[1][3].piece = NULL;
-    black[WIDTH+3].point.x = 1;
-    black[WIDTH+3].point.y=	2;
-
-
-    /*
-    board[0][7].piece = NULL;
-    board[1][7].piece = NULL;
-    black[7].piece = DEAD;
-    black[15].piece = DEAD;
-*/
-
-    board[5][6].piece = board[7][1].piece;
-    board[7][1].piece = NULL;
-    white[1].point.x = 6;
-    white[1].point.y = 5;
-/*
-    white[WIDTH+3].piece=DEAD;
-    white[1].piece=DEAD;
-
-    */
 
     draw_board(board);
 
-  //  playable();
-	//PIECE piece = select(black, 16);
+	play_playable( for_whom_the_bell_tolls( select ( white ) ) );
 
-    //select(black, 16);
-
-
-	play_playable( move_pawn( select( white, 16 ) ) );
-
-
+	draw_board(board);
 
 	while(1);
 
