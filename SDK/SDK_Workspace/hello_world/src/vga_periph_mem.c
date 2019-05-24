@@ -41,7 +41,7 @@ void clear_graphics_screen(Xuint32 BaseAddress){
 void draw_square(Xuint32 BaseAddress){
 	int i, j, k;
 		for (j = 0; j < 480; j++){
-			for (k = 0; k<(640/32); k++){ //20 kvadratica po redu
+			for (k = 0; k<(640/32); k++){
 				i = j*(640/32) + k;
 				if ((j > 200) && (j < 280) && (k > 8) && (k < 12)) {
 					VGA_PERIPH_MEM_mWriteMemory(BaseAddress + GRAPHICS_MEM_OFF + i*4, 0xFFFFFFFF);

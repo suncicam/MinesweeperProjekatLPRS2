@@ -60,6 +60,8 @@ static POINT playable[27];
 
 static int player_turn = BLACK;
 
+static int king_is_dead_long_live_the_king = 0;
+
 
 /* Functions used in game */
 
@@ -794,10 +796,15 @@ void swap(POINT from, POINT to) {
 
     // ako je neko bio na toj poziciji vise nije
     if (board[to.y][to.x].piece != NULL) {
+    	if(board[to.y][to.x].piece->piece==KING){
+    	    king_is_dead_long_live_the_king=1;
+    	}
         board[to.y][to.x].piece->piece = DEAD; // got killed brah
 
         // TO DO: if kralj game over
+
     }
+
 
     // pokazivac sa novog polja pokazuje na figuru
     board[to.y][to.x].piece = board[from.y][from.x].piece;
@@ -1000,7 +1007,6 @@ void draw_field(POINT out, int color) {
     }
 }
 
-
 void draw_board(SQUARE board[][WIDTH]) {
 
     POINT in, out;
@@ -1162,7 +1168,8 @@ void draw_board(SQUARE board[][WIDTH]) {
 
 //function that controls switches and buttons
 PIECE select(PIECE gray[]) {
-	int startX, startY, endX, endY, cnt, i = 0;
+	int cnt;
+	int startX, startY, endX, endY, i = 0;
 
 	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
@@ -1288,7 +1295,13 @@ PIECE select(PIECE gray[]) {
 			}
 		}
 
-		for (cnt=0; cnt < 2000000; cnt++);
+
+		for(cnt=0; cnt < 1500000; cnt++) {
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+							+ 0 * 4, 0xfff);
+		}
+
 		btn_state = NOTHING_PRESSED;
 	}
 
@@ -1378,7 +1391,12 @@ void play_playable(PIECE gray[]) {
 			}
 		}
 
-		for (cnt=0; cnt < 2000000; cnt++);
+		for(cnt = 0; cnt < 1500000; cnt++) {
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
+							+ 0 * 4, 0x0);
+		}
+
 		btn_state = NOTHING_PRESSED;
 	}
 
@@ -1426,17 +1444,25 @@ int main() {
 
     draw_board(board);
 
-    while (1) {
+    while (king_is_dead_long_live_the_king==0) {
     	player_turn = WHITE;
     	play_playable(white);
 		draw_board(board);
 
+
+		if(king_is_dead_long_live_the_king==0){
+
+
 		player_turn = BLACK;
 		play_playable(black);
 		draw_board(board);
+		}
+
     }
 
 	cleanup_platform();
+
+
 
 	return 0;
 }
