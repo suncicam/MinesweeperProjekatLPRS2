@@ -1299,7 +1299,7 @@ PIECE select(PIECE gray[]) {
 		for(cnt=0; cnt < 1500000; cnt++) {
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ 0 * 4, 0xfff);
+							+ 0 * 4, 0x5F);
 		}
 
 		btn_state = NOTHING_PRESSED;
@@ -1330,7 +1330,10 @@ void play_playable(PIECE gray[]) {
 	reset_playable();
 
 	while (foo() == 0) {
-		piece = for_whom_the_bell_tolls( select( gray ));
+		while((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & SW0) != 1 ) {
+			draw_board(board);
+			piece = for_whom_the_bell_tolls( select( gray ));
+		}
 	}
 
 	startX=piece.point.x*30+40;
@@ -1370,9 +1373,12 @@ void play_playable(PIECE gray[]) {
 			else if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & LEFT) == 0) {
 				draw_cursor(startX, startY, endX, endY, 2);
 
-				if(i > 0) {
+				if(i >= 0) {
 
 					i--;
+
+					if (i == -1)
+						i = 27;
 
 					while(playable[i].x == -1 && i >= 0) {
 						i--;
@@ -1394,7 +1400,7 @@ void play_playable(PIECE gray[]) {
 		for(cnt = 0; cnt < 1500000; cnt++) {
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ 0 * 4, 0x0);
+							+ 0 * 4, 0x5F);
 		}
 
 		btn_state = NOTHING_PRESSED;
@@ -1434,13 +1440,13 @@ int main() {
 		for (y = 0; y < 240; y++) {
 			i = y * 320 + x;
 			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ i * 4, 0x5F);
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x5F);
 		}
 	}
 
     setup_players(black, white);
     setup_board(board, black, white);
+
 
     draw_board(board);
 
@@ -1450,14 +1456,11 @@ int main() {
 		draw_board(board);
 
 
-		if(king_is_dead_long_live_the_king==0){
-
+		if(king_is_dead_long_live_the_king==1)	break;
 
 		player_turn = BLACK;
 		play_playable(black);
 		draw_board(board);
-		}
-
     }
 
 	cleanup_platform();
