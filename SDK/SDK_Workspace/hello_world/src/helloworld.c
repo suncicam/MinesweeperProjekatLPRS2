@@ -1299,7 +1299,7 @@ PIECE select(PIECE gray[]) {
 		for(cnt=0; cnt < 1500000; cnt++) {
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ 0 * 4, 0x5F);
+							+ 0 * 4, 0x0);
 		}
 
 		btn_state = NOTHING_PRESSED;
@@ -1400,7 +1400,7 @@ void play_playable(PIECE gray[]) {
 		for(cnt = 0; cnt < 1500000; cnt++) {
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
-							+ 0 * 4, 0x5F);
+							+ 0 * 4, 0x0);
 		}
 
 		btn_state = NOTHING_PRESSED;
@@ -1440,7 +1440,7 @@ int main() {
 		for (y = 0; y < 240; y++) {
 			i = y * 320 + x;
 			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x5F);
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x0);
 		}
 	}
 
