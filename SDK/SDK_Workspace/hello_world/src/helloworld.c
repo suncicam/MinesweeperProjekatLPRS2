@@ -1,9 +1,9 @@
 #include <stdio.h>
-#include "bitmap.h"
 
+#include "xio.h"
+#include "bitmap.h"
 #include "platform.h"
 #include "xparameters.h"
-#include "xio.h"
 #include "xil_exception.h"
 #include "vga_periph_mem.h"
 
