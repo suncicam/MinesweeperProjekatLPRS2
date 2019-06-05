@@ -7,18 +7,12 @@
 #include "xil_exception.h"
 #include "vga_periph_mem.h"
 
-// TO DO: zameniti sve sa int ???
-// TO DO: kraj i konj 
-// TO DO: ...
-
 #define UP     0b01000000
 #define DOWN   0b00000100
 #define LEFT   0b00100000
 #define RIGHT  0b00001000
-#define CENTER 0b00010000
 
 #define SW0 0b00000001
-#define SW1 0b00000010
 
 #define SIZE   8
 #define WIDTH  8
@@ -26,47 +20,68 @@
 #define WHITE   1
 #define BLACK  -1
 
+enum btn_state_t { NOTHING_PRESSED, SOMETHING_PRESSED };
 
-// CECA U PARIZU
+/* States of pieces */
 
 enum Piece { DEAD = 0, PAWN = 1, ROOK = 5, KNIGHT = 3, BISHOP = 4, QUEEN = 20, KING = 100 };
 
-/* Custom structures used in game */
 
+/* Custom structures */
+
+/* Coordinates of pieces or squares */
 typedef struct point_st {
     int x, y;
 } POINT;
 
+/* self explanatory */
 typedef struct chess_piece_st {
     POINT point;
-    int piece;
-    int color;
+    int piece; 
+    int color; 
 } PIECE;
 
+/* self explanatory */
 typedef struct square_st {
     POINT point;
     int color;
-    PIECE* piece;
+    PIECE* piece; // if there is piece on this square, this pointer will point to it else NULL
 } SQUARE;
 
 
-/* Global variables used in game */
+/* Global variables */
 
+/* BLACK player 16 pieces */
 static PIECE black[WIDTH<<1] = {};
+
+/* WHITE player 16 pieces */
 static PIECE white[WIDTH<<1] = {};
+
+/* 8x8 board matrix */
 static SQUARE board[WIDTH][WIDTH] = {};
 
-static POINT playable[27];
+/* array of posible moves for selected piece */
+static POINT playable[27]; // why 27 u ask ?
+						   // because it's a theoretical limmit of posible queen moves,
+						   // and all other pieces can fit inside 27 moves radius
 
+/* current turn BLACK or WHITE */
 static int player_turn = BLACK;
 
+/* if king is dead it's game over */
 static int king_is_dead_long_live_the_king = 0;
 
 
-/* Functions used in game */
+/* Functions */
 
+/* 
+	You'd never guess, but this function is used to draw a cursor on screen
 
-
+	startX, endX, startY, endY - exact pixels where cursor should be drawn
+	batman 0 - eraseing cursor 
+	batman 1 - draws bright green cursor, current selection
+	batman 2 - draws bright blue cursor, posible locations to be played
+ */
 void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
     unsigned short RGB;
     int x, y, i;
@@ -75,17 +90,17 @@ void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
         RGB = 0x38;
 
     if (batman == 0) {
-        if (( (startX-40)/30 + (startY)/30 ) & 1)
+        if (((startX-40)/30 + startY/30 ) & 1)
             RGB = 0x163;
         else
             RGB = 0x1F5;
     }
 
-   if (batman == 2)
-	   RGB = 0x3F;
+	if (batman == 2)
+		RGB = 0x3F;
 
 
-	// gornja ivica
+	// upper edge of cursor square
 	for (x = startX; x < endX; x++) {
 		for (y = startY; y < startY + 2; y++) {
 			i = y * 320 + x;
@@ -95,7 +110,7 @@ void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
 		}
 	}
 
-	// donja ivica
+	// bottom edge of cursor square
 	for (x = startX; x < endX; x++) {
 		for (y = endY - 2; y < endY; y++) {
 			i = y * 320 + x;
@@ -105,7 +120,7 @@ void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
 		}
 	}
 
-	// leva ivica
+	// left edge of cursor square
 	for (x = startX; x < startX + 2; x++) {
 		for (y = startY; y < endY; y++) {
 			i = y * 320 + x;
@@ -115,7 +130,7 @@ void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
 		}
 	}
 
-	// desna ivica
+	// right edge of cursor square
 	for (x = endX - 2; x < endX; x++) {
 		for (y = startY; y < endY; y++) {
 			i = y * 320 + x;
@@ -126,6 +141,8 @@ void draw_cursor(int startX, int startY, int endX, int endY, int batman) {
 	}
 }
 
+
+/* functions used to reset POINT playable array */
 void reset_playable() {
 	int i;
 
@@ -135,39 +152,52 @@ void reset_playable() {
 }
 
 
+/* 
+	when POINT playable is filled with posible moves, 
+	we use this function to mark moves on map with the bright blue color 
+*/
 void mark_playable() {
 	int i, startX, startY, endX, endY;
 
 	for (i = 0; i < 28; i++) {
-		if (playable[i].x != -1) {
-			startX = 40 + playable[i].x*30;
-			startY = playable[i].y*30;
-			endX = startX + 30;
-			endY = startY + 30;
+		// if playble X or Y is equal to -1, it means that we are out of legal moves,
+		// so there is no point going further down the playable array
+		if (playable[i].x == -1)
+			break;
 
-			draw_cursor(startX, startY, endX, endY, 2);
-		}
+		startX = 40 + playable[i].x*30;
+		startY = playable[i].y*30;
+		endX = startX + 30;
+		endY = startY + 30;
+
+		draw_cursor(startX, startY, endX, endY, 2);
 	}
 }
 
+
+/*  
+	hellper function used to check if the specific square is empty or ocupied by a friend or foe
+ */
 int eatable(POINT pos) {
 
-	// PRAZNO POLJE VRACA 0
 	if (board[pos.y][pos.x].piece == NULL)
-		return 0;  // smes da skocis
+		return 0;	// empty square
 
-	// POTEZ I BOJA AKO SU ISTI, znaci da je situacija u kojoj beli jede belog sto ne sme da se dozvoli.
 	if (board[pos.y][pos.x].piece->color == player_turn)
-		return -1; // ne smes da pojedes
+		return -1; // friendly fire
 	else
-		return  1; // smes da pojedes
+		return  1; // kill on sight
 }
 
+/* 
+	calculate posible king moves and fills in playable array
+	king - position of king
+*/
 void move_king(PIECE king) {
     int k = 0;
     POINT pos;
 
-    // GORE DOLE
+    // is UP move legal ?
     pos.x = king.point.x;
 
     if (king.point.y != 0) {
@@ -180,6 +210,7 @@ void move_king(PIECE king) {
         }
     }
 
+    // is DOWN move legal ?
     if (king.point.y != WIDTH-1) {
         pos.y = king.point.y + 1;
 
@@ -190,7 +221,7 @@ void move_king(PIECE king) {
         }
     }
 
-    // LEVO DESNO
+    // is LEFT move legal ?
     pos.y = king.point.y;
 
     if (king.point.x != 0) {
@@ -203,6 +234,7 @@ void move_king(PIECE king) {
         }
     }
 
+    // is RIGHT move legal ?
     if (king.point.x != WIDTH-1) {
         pos.x = king.point.x + 1;
 
@@ -213,7 +245,7 @@ void move_king(PIECE king) {
         }
     }
 
-    // GORE LEVO
+    // is UP_LEFT move legal ?
     if (king.point.y != 0 && king.point.x != 0) {
         pos.x = king.point.x - 1;
         pos.y = king.point.y - 1;
@@ -225,7 +257,7 @@ void move_king(PIECE king) {
         }
     }
 
-    // GORE DESNO
+    // is UP_RIGHT move legal ?
     if (king.point.y != 0 && king.point.x != WIDTH-1) {
         pos.x = king.point.x + 1;
         pos.y = king.point.y - 1;
@@ -237,7 +269,7 @@ void move_king(PIECE king) {
         }
     }
 
-    // DOLE LEVO
+    // is BOTTOM_LEFT move legal ?
     if (king.point.y != WIDTH-1 && king.point.x != 0) {
         pos.x = king.point.x - 1;
         pos.y = king.point.y + 1;
@@ -249,7 +281,7 @@ void move_king(PIECE king) {
         }
     }
 
-    // DOLE DESNO
+    // is BOTTOM_RIGHT move legal ?
     if (king.point.y != WIDTH-1 && king.point.x != WIDTH-1) {
         pos.x = king.point.x + 1;
         pos.y = king.point.y + 1;
@@ -262,31 +294,33 @@ void move_king(PIECE king) {
     }
 }
 
-
+/* 
+	calculate posible queen moves and fills in playable array
+	queen - position of queen
+*/
 void move_queen(PIECE queen) {
     int x, i, j, k = 0;
     POINT pos;
 
-    // provera za gore
-    pos.x = queen.point.x; // X se ne menja za UP & DOWN
+    pos.x = queen.point.x; // X is fixed for UP/DOWN
+    // are UP moves legal?
     for (i = (queen.point.y - 1); i >= 0; i--) {
         pos.y = i;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za dole
+    // are BOTTOM moves legal?
     for (i = (queen.point.y + 1); i < WIDTH; i++) {
         pos.y = i;
 
@@ -304,32 +338,32 @@ void move_queen(PIECE queen) {
             break;
     }
 
-    // provera za levo
-    pos.y = queen.point.y; // Y se ne menja za LEFT & RIGHT
+  
+    pos.y = queen.point.y; // Y is fixed for LEFT/RIGHT
+    // are LEFT moves legal ?
     for (i = (queen.point.x - 1); i >= 0; i--) {
         pos.x = i;
 
-        x = eatable(pos);
+        x = eatable(pos); 
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za desno
+    // are RIGHT moves legal ?
     for (i = (queen.point.x + 1); i < WIDTH; i++) {
         pos.x = i;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
         // dodavanje u playable i povecavanje brojaca
@@ -337,173 +371,174 @@ void move_queen(PIECE queen) {
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za gore levo
+    // are UP_LEFT moves legal ?
     for (i = (queen.point.x - 1), j = (queen.point.y - 1); i >= 0 && j >= 0; i--, j--) {
         pos.x = i;
         pos.y = j;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za gore desno
+    // are UP_RIGHT moves legal ?
     for (i = (queen.point.x + 1), j = (queen.point.y - 1); i < WIDTH && j >= 0; i++, j--) {
         pos.x = i;
         pos.y = j;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za dole levo
+    // are BOTTOM_LEFT moves legal ?
     for (i = (queen.point.x - 1), j = (queen.point.y + 1); i >= 0 && j < WIDTH; i--, j++) {
         pos.x = i;
         pos.y = j;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za dole desno
+     // are BOTTOM_RIGHT moves legal ?
     for (i = (queen.point.x + 1), j = (queen.point.y + 1); i < WIDTH && j < WIDTH; i++, j++) {
         pos.x = i;
         pos.y = j;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 }
 
+
+/* 
+	calculate posible bishop moves and fills in playable array
+	bishop - position of bishop
+*/
 void move_bishop(PIECE bishop) {
     int x, i, j, k = 0;
     POINT pos;
 
-    // provera za gore levo
+    // are UP_lEFT moves legal ?
     for (i = (bishop.point.x - 1), j = (bishop.point.y - 1); i >= 0 && j >= 0; i--, j--) {
         pos.x = i;
         pos.y = j;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za gore desno
+    // are UP_RIGHT moves legal ?
     for (i = (bishop.point.x + 1), j = (bishop.point.y - 1); i < WIDTH && j >= 0; i++, j--) {
         pos.x = i;
         pos.y = j;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za dole levo
+    // are BOTTOM_lEFT moves legal ?
     for (i = (bishop.point.x - 1), j = (bishop.point.y + 1); i >= 0 && j < WIDTH; i--, j++) {
         pos.x = i;
         pos.y = j;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 )  // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za dole desno
+    // are BOTTOM_RIGHT moves legal ?
     for (i = (bishop.point.x + 1), j = (bishop.point.y + 1); i < WIDTH && j < WIDTH; i++, j++) {
         pos.x = i;
         pos.y = j;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 }
 
+/* 
+	calculate posible knight moves and fills in playable array
+	knight - position of knight
+*/
 void move_knight(PIECE knight){
 	int k = 0;
     POINT pos;
 
-	// gore 2 levo 1
+	// is UP by 2 LEFT by 1 move legal ?
 	pos.y = knight.point.y - 2;
 	if (knight.point.y > 1 && knight.point.x > 0) {
 		pos.x = knight.point.x - 1;
@@ -514,7 +549,7 @@ void move_knight(PIECE knight){
 		}
 	}
 
-	// gore 2 desno 1
+	// is UP by 2 RIGHT by 1 move legal ?
 	if (knight.point.y > 1 && knight.point.x < 7) {
 		pos.x = knight.point.x + 1;
 		if ( eatable(pos) != -1 ) {
@@ -524,7 +559,7 @@ void move_knight(PIECE knight){
 		}
 	}
 
-	// gore 1 levo 2
+	// is UP by 1 LEFT by 2 move legal ?
 	pos.y = knight.point.y - 1;
 	if (knight.point.y > 0 && knight.point.x > 1) {
 		pos.x = knight.point.x - 2;
@@ -535,7 +570,7 @@ void move_knight(PIECE knight){
 		}
 	}
 
-	// gore 1 desno 2
+	// is UP by 1 RIGHT by 2 move legal ?
 	if (knight.point.y > 0 && knight.point.x < 6) {
 		pos.x = knight.point.x + 2;
 		if ( eatable(pos) != -1 ) {
@@ -545,7 +580,7 @@ void move_knight(PIECE knight){
 		}
 	}
 
-	// dole 1 levo 2
+	// is BOTTOM by 1 LEFT by 2 move legal ?
 	pos.y = knight.point.y + 1;
 	if (knight.point.y < 7 && knight.point.x > 1) {
 		pos.x = knight.point.x - 2;
@@ -556,7 +591,7 @@ void move_knight(PIECE knight){
 		}
 	}
 
-	// dole 1 desno 2
+	// is BOTTOM by 1 RIGHT by 2 move legal ?
 	if (knight.point.y < 7 && knight.point.x < 6) {
 		pos.x = knight.point.x + 2;
 		if ( eatable(pos) != -1 ) {
@@ -566,7 +601,7 @@ void move_knight(PIECE knight){
 		}
 	}
 
-	// dole 2 levo 1
+	// is BOTTOM by 2 LEFT by 1 move legal ?
 	pos.y = knight.point.y + 2;
 	if (knight.point.y < 6 && knight.point.x > 0) {
 		pos.x = knight.point.x - 1;
@@ -577,7 +612,7 @@ void move_knight(PIECE knight){
 		}
 	}
 
-	// dole 2 desno 1
+	// is BOTTOM by 2 RIGHT by 1 move legal ?
 	if (knight.point.y < 6 && knight.point.x < 7) {
 		pos.x = knight.point.x + 1;
 		if ( eatable(pos) != -1 ) {
@@ -588,98 +623,103 @@ void move_knight(PIECE knight){
 	}
 }
 
-
+/* 
+	calculate posible rook moves and fills in playable array
+	rook - position of rook
+*/
 void move_rook(PIECE rook) {
     int x, i, k = 0;
     POINT pos;
 
-    // provera za gore
-    pos.x = rook.point.x; // X se ne menja za UP & DOWN
+    pos.x = rook.point.x; // X is fixed for UP/DOWN
+
+    // are UP moves legal ?
     for (i = (rook.point.y - 1); i >= 0; i--) {
         pos.y = i;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za dole
+	// are BOTTOM moves legal ?
     for (i = (rook.point.y + 1); i < WIDTH; i++) {
         pos.y = i;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za levo
-    pos.y = rook.point.y; // Y se ne menja za LEFT & RIGHT
+    pos.y = rook.point.y; // Y is fixed for LEFT/RIGHT
+
+    // are LEFT moves legal ?
     for (i = (rook.point.x - 1); i >= 0; i--) {
         pos.x = i;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 
-    // provera za desno
+    // are RIGHT moves legal ?
     for (i = (rook.point.x + 1); i < WIDTH; i++) {
         pos.x = i;
 
         x = eatable(pos);
 
-        if ( x == -1 ) // naisla je na figuru svoje boje pa ne sme da jede
+        if ( x == -1 ) // u shall not pass! (friendly fire)
             break;
 
-        // dodavanje u playable i povecavanje brojaca
         playable[k].x = pos.x;
         playable[k].y = pos.y;
         k++;
 
-        if ( x == 1 ) // sme da jede ali ne sme dalje
+        if ( x == 1 ) // u shall not pass! (foe alert)
             break;
     }
 }
 
+/* 
+	calculate posible pawn moves and fills in playable array,
+	2 sets of identical functionalities, because pawn is the only piece
+	who moves different based on color/side
 
+	pawn - position of pawn
+*/
 void move_pawn(PIECE pawn) {
     int k = 0;
     POINT pos;
 
     if (player_turn == WHITE) {
 
-        // vrth table ?
         if (pawn.point.y != 0) {
             pos.y = pawn.point.y - 1;
 
-            // ako nisi u levom cosku smes da jedes.
             if ( pawn.point.x != 0 ) {
                 pos.x = pawn.point.x - 1;
                 if ( eatable(pos) == 1 ) {
@@ -689,7 +729,6 @@ void move_pawn(PIECE pawn) {
                 }
             }
 
-            // ako nisi u desnom cosku smes da jedes.
             if ( pawn.point.x != 7 ) {
                 pos.x = pawn.point.x + 1;
                 if ( eatable(pos) == 1) {
@@ -699,7 +738,6 @@ void move_pawn(PIECE pawn) {
                 }
             }
 
-            // prazno polje iznad
             pos.x = pawn.point.x;
             if ( eatable(pos) == 0 ) {
                 playable[k].x = pos.x;
@@ -707,7 +745,6 @@ void move_pawn(PIECE pawn) {
                 k++;
 
                 pos.y--;
-                // 2 prazno polje ?
                 if (pawn.point.y == 6) {
                     if ( eatable(pos) == 0 ) {
                         playable[k].x = pos.x;
@@ -718,11 +755,9 @@ void move_pawn(PIECE pawn) {
             }
         }
     } else {
-        // dno table ?
         if (pawn.point.y != 7) {
             pos.y = pawn.point.y + 1;
 
-            // ako nisi u levom cosku smes da jedes.
             if ( pawn.point.x != 0 ) {
                 pos.x = pawn.point.x - 1;
                 if ( eatable(pos) == 1 ) {
@@ -732,7 +767,6 @@ void move_pawn(PIECE pawn) {
                 }
             }
 
-            // ako nisi u desnom cosku smes da jedes.
             if ( pawn.point.x != 7 ) {
                 pos.x = pawn.point.x + 1;
                 if ( eatable(pos) == 1) {
@@ -742,7 +776,6 @@ void move_pawn(PIECE pawn) {
                 }
             }
 
-            // prazno polje ispod
             pos.x = pawn.point.x;
             if ( eatable(pos) == 0 ) {
                 playable[k].x = pos.x;
@@ -750,7 +783,6 @@ void move_pawn(PIECE pawn) {
                 k++;
 
                 pos.y++;
-                // 2 prazno polje ?
                 if (pawn.point.y == 1) {
                     if ( eatable(pos) == 0 ) {
                         playable[k].x = pos.x;
@@ -763,6 +795,10 @@ void move_pawn(PIECE pawn) {
     }
 }
 
+/*
+	
+	piece - 
+ */
 PIECE for_whom_the_bell_tolls(PIECE piece) {
     reset_playable();
 
@@ -792,30 +828,30 @@ PIECE for_whom_the_bell_tolls(PIECE piece) {
     return piece;
 }
 
+/*
+	moves piece from one point to the other, and clears it history from the previous
+ */
 void swap(POINT from, POINT to) {
-
-    // ako je neko bio na toj poziciji vise nije
     if (board[to.y][to.x].piece != NULL) {
+
     	if(board[to.y][to.x].piece->piece==KING){
-    	    king_is_dead_long_live_the_king=1;
+    	    king_is_dead_long_live_the_king = 1;
     	}
+
         board[to.y][to.x].piece->piece = DEAD; // got killed brah
-
-        // TO DO: if kralj game over
-
     }
 
-
-    // pokazivac sa novog polja pokazuje na figuru
     board[to.y][to.x].piece = board[from.y][from.x].piece;
-    // update X i Y za figuru na vrednosti novog polja
+
     board[to.y][to.x].piece->point.x = to.x;
     board[to.y][to.x].piece->point.y = to.y;
 
-    // brisemo pokazivac sa starog polja
     board[from.y][from.x].piece = NULL;
 }
 
+/*
+	setup board on the game start
+ */
 void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
 	int x, y;
     for (y = 0; y < WIDTH; y++) {
@@ -824,6 +860,7 @@ void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
             board[y][x].point.y = y;
             board[y][x].piece = NULL;
 
+            /
             if (y == 0)
                 board[y][x].piece = (PIECE*)(black + x);
             if (y == 1)
@@ -841,7 +878,12 @@ void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
     }
 }
 
-
+/*
+	fills in black & white pieces array on start
+	order isn't random:
+						r k b k q b k r
+						p p p p p p p p 
+ */
 void setup_players(PIECE black[], PIECE white[]) {
 
     // PAWNS Black & White
@@ -950,6 +992,12 @@ void setup_players(PIECE black[], PIECE white[]) {
     white[3].color = WHITE;
 }
 
+/*
+	function used to draw a piece on screen
+
+	in  - exact starting pixel in mega-map
+	out - position of square on board to be written on, these are indexes not exact pixels
+ */
 void draw_piece(POINT in, POINT out) {
     int R, G, B, size = 30;
     unsigned short x, y, RGB, tmp = 0;
@@ -957,13 +1005,16 @@ void draw_piece(POINT in, POINT out) {
 
 	for (y = 0; y < size; y++) {
 		for (x = 0; x < size; x++) {
-			ox = ( 40 + (out.x * size) ) + x; // konverzija mozda sam zajebao
+			ox = ( 40 + (out.x * size) ) + x;
 			oy = ( out.y * size ) + y;
 			oi = oy * 320 + ox;
 
 			ix = in.x + x;
 			iy = in.y + y;
 			ii = iy * bitmap.width + ix;
+
+			// CONVERTS RGB_565 to RGB_333
+			// ----------------------------------------------------------------------------------------------------------------------------------------------------
 
 			tmp = ( (unsigned short)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 1] << 8 ) | (unsigned short)bitmap.pixel_data[ii * bitmap.bytes_per_pixel + 0];
 
@@ -977,6 +1028,8 @@ void draw_piece(POINT in, POINT out) {
 			G <<= 3;
 			RGB = R | G | B;
 
+			// ----------------------------------------------------------------------------------------------------------------------------------------------------
+
 			VGA_PERIPH_MEM_mWriteMemory(
 					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF
 							+ oi * 4, RGB);
@@ -985,6 +1038,9 @@ void draw_piece(POINT in, POINT out) {
 }
 
 
+/*
+	draws empty squares
+ */
 void draw_field(POINT out, int color) {
     unsigned short RGB; // beton verzija "crna" ili "bela"
     int x, y;
@@ -1007,6 +1063,11 @@ void draw_field(POINT out, int color) {
     }
 }
 
+/*
+	You'd never guess
+
+	bord - board
+*/
 void draw_board(SQUARE board[][WIDTH]) {
 
     POINT in, out;
@@ -1165,19 +1226,18 @@ void draw_board(SQUARE board[][WIDTH]) {
     }
 }
 
-
-//function that controls switches and buttons
+/*
+	gray - black or white piece array
+	
+	when u press the switch you will iterate trough the gray array
+ */
 PIECE select(PIECE gray[]) {
-	int cnt;
-	int startX, startY, endX, endY, i = 0;
-
-	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
+	int startX, startY, endX, endY, cnt, i = 0;
 
 	btn_state_t btn_state = NOTHING_PRESSED;
 
-	while(gray[i].piece == DEAD){
-		i++;
-	}
+	while(gray[i].piece == DEAD) i++;
+
 
 	startX=gray[i].point.x*30+40;
 	startY=gray[i].point.y*30;
@@ -1192,7 +1252,6 @@ PIECE select(PIECE gray[]) {
 			if ((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & DOWN) == 0) {
 				draw_cursor(startX, startY, endX, endY, 0);
 
-						 /* 7 */
 				if (i > 7) {
 
 					i -= 8;
@@ -1308,6 +1367,9 @@ PIECE select(PIECE gray[]) {
 	return gray[i];
 }
 
+/*
+ 	hellper function, safe check if u have actually selected a piece who can actually move anywhere
+ */
 int foo() {
 	int i;
 
@@ -1318,12 +1380,12 @@ int foo() {
 	return 0;
 }
 
-
+/*
+	almost all previus function are used here, this is core game logic
+ */
 void play_playable(PIECE gray[]) {
 	int startX, startY, endX, endY, cnt, i = 0;
 	PIECE piece;
-
-	typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
 	btn_state_t btn_state = NOTHING_PRESSED;
 
@@ -1409,7 +1471,6 @@ void play_playable(PIECE gray[]) {
 	swap(piece.point, playable[i]);
 }
 
-
 /*-----------------------------------MAIN--------------------------------------*/
 
 int main() {
@@ -1447,16 +1508,14 @@ int main() {
     setup_players(black, white);
     setup_board(board, black, white);
 
-
     draw_board(board);
 
-    while (king_is_dead_long_live_the_king==0) {
+    while (!king_is_dead_long_live_the_king) {
     	player_turn = WHITE;
     	play_playable(white);
 		draw_board(board);
 
-
-		if(king_is_dead_long_live_the_king==1)	break;
+		if(king_is_dead_long_live_the_king)	break;
 
 		player_turn = BLACK;
 		play_playable(black);
@@ -1464,8 +1523,6 @@ int main() {
     }
 
 	cleanup_platform();
-
-
 
 	return 0;
 }
