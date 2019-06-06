@@ -20,7 +20,7 @@
 #define WHITE   1
 #define BLACK  -1
 
-enum btn_state_t { NOTHING_PRESSED, SOMETHING_PRESSED };
+typedef enum { NOTHING_PRESSED, SOMETHING_PRESSED } btn_state_t;
 
 /* States of pieces */
 
@@ -835,7 +835,10 @@ void swap(POINT from, POINT to) {
     if (board[to.y][to.x].piece != NULL) {
 
     	if(board[to.y][to.x].piece->piece==KING){
-    	    king_is_dead_long_live_the_king = 1;
+    		if(board[to.y][to.x].piece->color==BLACK)
+    			king_is_dead_long_live_the_king = 1; // WHITE WON
+    		else
+    			king_is_dead_long_live_the_king = 2; // BLACK WON
     	}
 
         board[to.y][to.x].piece->piece = DEAD; // got killed brah
@@ -860,7 +863,7 @@ void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
             board[y][x].point.y = y;
             board[y][x].piece = NULL;
 
-            /
+
             if (y == 0)
                 board[y][x].piece = (PIECE*)(black + x);
             if (y == 1)
@@ -1471,6 +1474,86 @@ void play_playable(PIECE gray[]) {
 	swap(piece.point, playable[i]);
 }
 
+void victory(PIECE gray[]) {
+	int i, j;
+
+	for(i=0; i<8; i++) {
+		for (j=0; j<8; j++) {
+			board[i][j].piece = NULL;
+		}
+	}
+
+	gray[0].piece = PAWN;
+	gray[0].point.x = 2;
+	gray[0].point.y = 1;
+	board[1][2].piece = &gray[0];
+
+	gray[1].piece = PAWN;
+	gray[0].point.x = 2;
+	gray[0].point.y = 2;
+	board[2][2].piece = &gray[1];
+
+	gray[2].piece = PAWN;
+	gray[0].point.x = 2;
+	gray[0].point.y = 3;
+	board[3][2].piece = &gray[2];
+
+	gray[3].piece = PAWN;
+	gray[0].point.x = 2;
+	gray[0].point.y = 4;
+	board[4][2].piece = &gray[3];
+
+	gray[4].piece = PAWN;
+	gray[0].point.x = 2;
+	gray[0].point.y = 5;
+	board[5][2].piece = &gray[4];
+
+	gray[5].piece = PAWN;
+	gray[0].point.x = 2;
+	gray[0].point.y = 6;
+	board[6][2].piece = &gray[5];
+
+	gray[6].piece = PAWN;
+	gray[0].point.x = 5;
+	gray[0].point.y = 1;
+	board[1][5].piece = &gray[6];
+
+	gray[7].piece = PAWN;
+	gray[0].point.x = 5;
+	gray[0].point.y = 2;
+	board[2][5].piece = &gray[7];
+
+	gray[8].piece = PAWN;
+	gray[0].point.x = 5;
+	gray[0].point.y = 3;
+	board[3][5].piece = &gray[8];
+
+	gray[9].piece = PAWN;
+	gray[0].point.x = 5;
+	gray[0].point.y = 4;
+	board[4][5].piece = &gray[9];
+
+	gray[10].piece = PAWN;
+	gray[0].point.x = 5;
+	gray[0].point.y = 5;
+	board[5][5].piece = &gray[10];
+
+	gray[11].piece = PAWN;
+	gray[0].point.x = 5;
+	gray[0].point.y = 6;
+	board[6][5].piece = &gray[11];
+
+	gray[12].piece = PAWN;
+	gray[0].point.x = 3;
+	gray[0].point.y = 1;
+	board[1][3].piece = &gray[12];
+
+	gray[13].piece = PAWN;
+	gray[0].point.x = 4;
+	gray[0].point.y = 1;
+	board[1][4].piece = &gray[13];
+}
+
 /*-----------------------------------MAIN--------------------------------------*/
 
 int main() {
@@ -1521,6 +1604,13 @@ int main() {
 		play_playable(black);
 		draw_board(board);
     }
+
+    if (king_is_dead_long_live_the_king == 1)
+    	victory(white);
+    else
+    	victory(black);
+
+    draw_board(board);
 
 	cleanup_platform();
 
