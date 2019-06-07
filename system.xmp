@@ -25,5 +25,5 @@ EnableParTimingError: 1
 ShowLicenseDialog: 1
 BInfo: 
 Processor: microblaze_0
-ElfImp: 
+ElfImp: SDK/SDK_Workspace/hello_world/Debug/hello_world.elf
 ElfSim: 
