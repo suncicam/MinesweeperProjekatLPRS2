@@ -71,6 +71,8 @@ static int player_turn = BLACK;
 /* if king is dead it's game over */
 static int king_is_dead_long_live_the_king = 0;
 
+/* take back flag */
+static int flag = 0;
 
 /* Functions */
 
@@ -176,10 +178,9 @@ void mark_playable() {
 
 
 /*  
-	hellper function used to check if the specific square is empty or ocupied by a friend or foe
+	helper function used to check if the specific square is empty or occupied by a friend or foe
  */
 int eatable(POINT pos) {
-
 	if (board[pos.y][pos.x].piece == NULL)
 		return 0;	// empty square
 
@@ -194,8 +195,11 @@ int eatable(POINT pos) {
 	king - position of king
 */
 void move_king(PIECE king) {
-    int k = 0;
+    int k = 1;
     POINT pos;
+
+    playable[0].x = king.point.x;
+    playable[0].y = king.point.y;
 
     // is UP move legal ?
     pos.x = king.point.x;
@@ -299,8 +303,11 @@ void move_king(PIECE king) {
 	queen - position of queen
 */
 void move_queen(PIECE queen) {
-    int x, i, j, k = 0;
+    int x, i, j, k = 1;
     POINT pos;
+
+    playable[0].x = queen.point.x;
+    playable[0].y = queen.point.y;
 
     pos.x = queen.point.x; // X is fixed for UP/DOWN
     // are UP moves legal?
@@ -454,8 +461,11 @@ void move_queen(PIECE queen) {
 	bishop - position of bishop
 */
 void move_bishop(PIECE bishop) {
-    int x, i, j, k = 0;
+    int x, i, j, k = 1;
     POINT pos;
+
+    playable[0].x = bishop.point.x;
+    playable[0].y = bishop.point.y;
 
     // are UP_lEFT moves legal ?
     for (i = (bishop.point.x - 1), j = (bishop.point.y - 1); i >= 0 && j >= 0; i--, j--) {
@@ -535,8 +545,11 @@ void move_bishop(PIECE bishop) {
 	knight - position of knight
 */
 void move_knight(PIECE knight){
-	int k = 0;
+	int k = 1;
     POINT pos;
+
+    playable[0].x = knight.point.x;
+    playable[0].y = knight.point.y;
 
 	// is UP by 2 LEFT by 1 move legal ?
 	pos.y = knight.point.y - 2;
@@ -628,8 +641,11 @@ void move_knight(PIECE knight){
 	rook - position of rook
 */
 void move_rook(PIECE rook) {
-    int x, i, k = 0;
+    int x, i, k = 1;
     POINT pos;
+
+    playable[0].x = rook.point.x;
+    playable[0].y = rook.point.y;
 
     pos.x = rook.point.x; // X is fixed for UP/DOWN
 
@@ -712,8 +728,11 @@ void move_rook(PIECE rook) {
 	pawn - position of pawn
 */
 void move_pawn(PIECE pawn) {
-    int k = 0;
+    int k = 1;
     POINT pos;
+
+    playable[0].x = pawn.point.x;
+    playable[0].y = pawn.point.y;
 
     if (player_turn == WHITE) {
 
@@ -888,7 +907,6 @@ void setup_board(SQUARE board[][WIDTH], PIECE black[], PIECE white[]) {
 						p p p p p p p p 
  */
 void setup_players(PIECE black[], PIECE white[]) {
-
     // PAWNS Black & White
 	int i;
 
@@ -1072,7 +1090,6 @@ void draw_field(POINT out, int color) {
 	bord - board
 */
 void draw_board(SQUARE board[][WIDTH]) {
-
     POINT in, out;
     int x, y;
 
@@ -1239,8 +1256,8 @@ PIECE select(PIECE gray[]) {
 
 	btn_state_t btn_state = NOTHING_PRESSED;
 
+	// skipping the dead pieces
 	while(gray[i].piece == DEAD) i++;
-
 
 	startX=gray[i].point.x*30+40;
 	startY=gray[i].point.y*30;
@@ -1259,7 +1276,8 @@ PIECE select(PIECE gray[]) {
 
 					i -= 8;
 
-					while(gray[i].piece==DEAD){
+					// skipping the dead pieces
+					while(gray[i].piece==DEAD) {
 
 						if (i == 0)
 							i = 15;
@@ -1282,6 +1300,7 @@ PIECE select(PIECE gray[]) {
 
 					i += 8;
 
+					// skipping the dead pieces
 					while(gray[i].piece==DEAD) {
 
 						if (i == 16)
@@ -1305,6 +1324,7 @@ PIECE select(PIECE gray[]) {
 
 					i++;
 
+					// skipping the dead pieces
 					while(gray[i].piece == DEAD || i == 16) {
 
 						if (i == 16)
@@ -1328,6 +1348,7 @@ PIECE select(PIECE gray[]) {
 
 					i--;
 
+					// skipping the dead pieces
 					while(gray[i].piece==DEAD) {
 
 						if (i == 0)
@@ -1339,6 +1360,7 @@ PIECE select(PIECE gray[]) {
 				} else {
 					i = 15;
 
+					// skipping the dead pieces
 					while(gray[i].piece==DEAD) {
 
 						if (i == 0)
@@ -1371,20 +1393,7 @@ PIECE select(PIECE gray[]) {
 }
 
 /*
- 	hellper function, safe check if u have actually selected a piece who can actually move anywhere
- */
-int foo() {
-	int i;
-
-	for (i = 0; i < 28; i++)
-		if (playable[i].x != -1)
-			return 1;
-
-	return 0;
-}
-
-/*
-	almost all previus function are used here, this is core game logic
+	almost all previous function are used here, this is core game logic
  */
 void play_playable(PIECE gray[]) {
 	int startX, startY, endX, endY, cnt, i = 0;
@@ -1392,14 +1401,12 @@ void play_playable(PIECE gray[]) {
 
 	btn_state_t btn_state = NOTHING_PRESSED;
 
+	flag = 0;
+
 	reset_playable();
 
-	while (foo() == 0) {
-		while((Xil_In32(XPAR_MY_PERIPHERAL_0_BASEADDR) & SW0) != 1 ) {
-			draw_board(board);
-			piece = for_whom_the_bell_tolls( select( gray ));
-		}
-	}
+	draw_board(board);
+	piece = for_whom_the_bell_tolls( select( gray ));
 
 	startX=piece.point.x*30+40;
 	startY=piece.point.y*30;
@@ -1471,8 +1478,15 @@ void play_playable(PIECE gray[]) {
 		btn_state = NOTHING_PRESSED;
 	}
 
-	swap(piece.point, playable[i]);
+	if(piece.point.x == playable[i].x && piece.point.y == playable[i].y) //
+		flag = 1;
+	else
+		swap(piece.point, playable[i]);
 }
+
+/*
+ 	 Victory celebration
+ */
 
 void victory(PIECE gray[]) {
 	int i, j;
@@ -1482,6 +1496,68 @@ void victory(PIECE gray[]) {
 			board[i][j].piece = NULL;
 		}
 	}
+
+	/*
+	gray[0].piece = PAWN;
+	gray[0].point.x = 1;
+	gray[0].point.y = 3;
+	board[3][1].piece = &gray[0];
+
+	gray[1].piece = PAWN;
+	gray[0].point.x = 1;
+	gray[0].point.y = 4;
+	board[4][1].piece = &gray[1];
+
+	gray[2].piece = PAWN;
+	gray[0].point.x = 1;
+	gray[0].point.y = 5;
+	board[5][1].piece = &gray[2];
+
+	gray[3].piece = PAWN;
+	gray[0].point.x = 2;
+	gray[0].point.y = 6;
+	board[6][2].piece = &gray[3];
+
+	gray[4].piece = PAWN;
+	gray[0].point.x = 3;
+	gray[0].point.y = 5;
+	board[5][3].piece = &gray[4];
+
+	gray[5].piece = KING;
+	gray[0].point.x = 3;
+	gray[0].point.y = 4;
+	board[4][3].piece = &gray[5];
+
+	gray[6].piece = QUEEN;
+	gray[0].point.x = 4;
+	gray[0].point.y = 4;
+	board[4][4].piece = &gray[6];
+
+	gray[7].piece = PAWN;
+	gray[0].point.x = 4;
+	gray[0].point.y = 5;
+	board[5][4].piece = &gray[7];
+
+	gray[8].piece = PAWN;
+	gray[0].point.x = 5;
+	gray[0].point.y = 6;
+	board[6][5].piece = &gray[8];
+
+	gray[9].piece = PAWN;
+	gray[0].point.x = 6;
+	gray[0].point.y = 3;
+	board[3][6].piece = &gray[9];
+
+	gray[10].piece = PAWN;
+	gray[0].point.x = 6;
+	gray[0].point.y = 4;
+	board[4][6].piece = &gray[10];
+
+	gray[11].piece = PAWN;
+	gray[0].point.x = 6;
+	gray[0].point.y = 5;
+	board[5][6].piece = &gray[11];
+	*/
 
 	gray[0].piece = PAWN;
 	gray[0].point.x = 2;
@@ -1552,13 +1628,60 @@ void victory(PIECE gray[]) {
 	gray[0].point.x = 4;
 	gray[0].point.y = 1;
 	board[1][4].piece = &gray[13];
+
+}
+
+/*
+	Game logic
+ */
+void game() {
+	int x, y, i;
+
+	// Mihajlo Solda's gay background
+	for (x = 0; x < 320; x++) {
+		for (y = 0; y < 240; y++) {
+			i = y * 320 + x;
+			VGA_PERIPH_MEM_mWriteMemory(
+					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x0);
+		}
+	}
+
+    setup_players(black, white);
+    setup_board(board, black, white);
+
+    draw_board(board);
+
+    while (!king_is_dead_long_live_the_king) {
+    	player_turn = WHITE;
+
+    	do {
+    		play_playable(white);
+    	} while (flag);
+
+		draw_board(board);
+
+		if(king_is_dead_long_live_the_king)	break;
+
+		player_turn = BLACK;
+
+		do {
+			play_playable(black);
+		} while (flag);
+
+		draw_board(board);
+    }
+
+    if (king_is_dead_long_live_the_king == 1)
+    	victory(white);
+    else
+    	victory(black);
+
+    draw_board(board);
 }
 
 /*-----------------------------------MAIN--------------------------------------*/
 
 int main() {
-
-	int x, y, i;
 
 	init_platform();
 
@@ -1579,38 +1702,7 @@ int main() {
 	VGA_PERIPH_MEM_mWriteMemory(
 			XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + 0x20, 1);
 
-	// Mihajlo Solda's gay background
-	for (x = 0; x < 320; x++) {
-		for (y = 0; y < 240; y++) {
-			i = y * 320 + x;
-			VGA_PERIPH_MEM_mWriteMemory(
-					XPAR_VGA_PERIPH_MEM_0_S_AXI_MEM0_BASEADDR + GRAPHICS_MEM_OFF + i * 4, 0x0);
-		}
-	}
-
-    setup_players(black, white);
-    setup_board(board, black, white);
-
-    draw_board(board);
-
-    while (!king_is_dead_long_live_the_king) {
-    	player_turn = WHITE;
-    	play_playable(white);
-		draw_board(board);
-
-		if(king_is_dead_long_live_the_king)	break;
-
-		player_turn = BLACK;
-		play_playable(black);
-		draw_board(board);
-    }
-
-    if (king_is_dead_long_live_the_king == 1)
-    	victory(white);
-    else
-    	victory(black);
-
-    draw_board(board);
+	game();
 
 	cleanup_platform();
 
