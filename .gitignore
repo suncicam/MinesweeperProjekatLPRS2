@@ -105,3 +105,4 @@ _ngo/
 *_xst.xrpt
 xlnx_auto_0_xdb/
 !minesweeper.bit
+!pcores/vga_periph_mem_v1_00_a/netlist/char_rom_def.ngc
